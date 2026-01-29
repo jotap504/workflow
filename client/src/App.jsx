@@ -53,6 +53,7 @@ const Dashboard = () => {
             <NavIcon to="/reports" icon={<BarChart size={18} />} label="Reportes" navigate={navigate} />
             <NavIcon to="/profile" icon={<User size={18} />} label="Perfil" navigate={navigate} />
             {(user?.role === 'admin' || user?.role === 'manager') && <NavIcon to="/categories" icon={<Layers size={18} />} label="Categorías" navigate={navigate} />}
+            {user?.role === 'admin' && <NavIcon to="/users" icon={<Users size={18} />} label="Usuarios" navigate={navigate} />}
           </nav>
         </div>
 
@@ -73,6 +74,11 @@ const Dashboard = () => {
           {(user?.role === 'admin' || user?.role === 'manager') && (
             <button onClick={() => { navigate('/categories'); setMobileMenuOpen(false); }} style={{ textAlign: 'left', padding: '10px', background: 'transparent', border: 'none', color: 'inherit', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Layers size={20} /> Categorías
+            </button>
+          )}
+          {user?.role === 'admin' && (
+            <button onClick={() => { navigate('/users'); setMobileMenuOpen(false); }} style={{ textAlign: 'left', padding: '10px', background: 'transparent', border: 'none', color: 'inherit', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Users size={20} /> Usuarios
             </button>
           )}
           <button onClick={() => { navigate('/profile'); setMobileMenuOpen(false); }} style={{ textAlign: 'left', padding: '10px', background: 'transparent', border: 'none', color: 'inherit', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
