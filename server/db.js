@@ -1,5 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const bcrypt = require('bcryptjs');
 
 const dbPath = path.resolve(__dirname, 'workflow.db');
 
@@ -104,6 +105,18 @@ function initDB() {
                 stmt.run("Marketing", "#ec4899");
                 stmt.finalize();
                 console.log("Seeded basic categories.");
+            }
+        });
+
+        // Basic Seed for Admin User if empty
+        db.get("SELECT count(*) as count FROM users", (err, row) => {
+            if (row && row.count === 0) {
+                const password = 'admin123';
+                const hashedPassword = bcrypt.hashSync(password, 8);
+                db.run(`INSERT INTO users (username, password, role) VALUES (?, ?, ?)`, ['admin', hashedPassword, 'admin'], (err) => {
+                    if (err) console.error('Error seeding admin user:', err.message);
+                    else console.log('Admin user seeded (admin / admin123)');
+                });
             }
         });
     });
