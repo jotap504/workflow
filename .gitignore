@@ -1,0 +1,13 @@
+node_modules
+.env
+dist
+*.db
+*.db-journal
+uploads/
+.DS_Store
+client/dist
+client/node_modules
+server/node_modules
+server/workflow.db
+server/uploads/*
+!server/uploads/.gitkeep

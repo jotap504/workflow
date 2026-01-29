@@ -1,0 +1,51 @@
+Plan de Implementación: Workflow WebApp
+Objetivo
+Desarrollar una aplicación web moderna ("Workflow") para la gestión de tareas empresariales, con roles jerárquicos (Gerente/Usuario), sistema de urgencias, calendario, votaciones y reportes. El diseño debe ser premium, con modos Claro/Oscuro y animaciones suaves.
+
+User Review Required
+IMPORTANT
+
+Stack Tecnológico Propuesto:
+
+Frontend: React (vía Vite) para la interactividad y velocidad.
+Backend: Node.js con Express para la API.
+Base de Datos: SQLite (archivo local) para facilitar la instalación y backup, o PostgreSQL si se espera gran concurrencia (Recomendado: SQLite para empezar).
+Estilos: CSS Vanilla con variables CSS para el "Theming" (Dark/Light) y diseño "Glassmorphism".
+Respuestas a tus preguntas (Brainstorming)
+1. Notificaciones de Urgencia
+Para notificar cuando se crea una tarea ROJA (Urgente), implementaremos:
+
+Notificación "Toast" Persistente: Una alerta visual en la esquina de la pantalla que no desaparece hasta que el usuario la cierra manualmene.
+Efecto Visual en Dashboard: El borde de la pantalla o la barra de navegación parpadea suavemente en rojo si hay urgencias no vistas.
+Email (Opcional): Si el servidor tiene configurado SMTP, enviar un correo inmediato.
+Sonido de Alerta: Un sonido sutil pero distintivo (configurable por el usuario).
+2. Funciones Adicionales Recomendadas
+Wiki / Base de Conocimiento: Un lugar para subir manuales de procedimientos linkeados a las categorías de tareas (ej: "Cómo facturar" en la categoría Administración).
+Time Tracking (Fichaje): Botón de "Play/Pause" en las tareas para medir cuánto tiempo real llevó hacerla vs. lo estimado.
+Chat Contextual: Comentarios dentro de cada tarea para evitar hilos de email externos.
+Dependencias de Tareas: "La Tarea B no puede empezar hasta que la Tarea A termine".
+Papelera de Reciclaje: Para que los Gerentes puedan restaurar tareas borradas por error.
+Cambios Propuestos
+Backend (Node/Express)
+Definiremos una estructura API RESTful.
+
+server/index.js: Punto de entrada.
+server/database/db.sqlite: Base de datos.
+server/routes: Rutas para auth, tasks, users, votes.
+server/middleware: Autenticación (JWT) y manejo de archivos (Multer).
+Frontend (React + Vite)
+Estructura de componentes moderna.
+
+src/App.jsx: Router principal.
+src/context: AuthContext y ThemeContext.
+src/components:
+TaskCard: Tarjeta visual con indicador de urgencia.
+CalendarView: Visualizador mensual.
+MetricsChart: Gráficos con chart.js o SVG puro.
+VotingPanel: Componente para las encuestas.
+Plan de Verificación
+Pruebas Manuales
+Flujo de Usuarios: Crear Admin, crear Usuario, loguearse con ambos, verificar permisos de borrado.
+Ciclo de Tarea: Crear tarea urgente -> Verificar notificación -> Finalizar tarea -> Verificar reporte.
+Persistencia: Reiniciar servidor y verificar que los datos y archivos adjuntos siguen ahí.
+Diseño: Alternar Dark/Light mode y verificar contrastes.

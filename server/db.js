@@ -1,0 +1,114 @@
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
+
+const dbPath = path.resolve(__dirname, 'workflow.db');
+
+const db = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+        console.error('Error opening database ' + dbPath + ': ' + err.message);
+    } else {
+        console.log('Connected to the SQLite database.');
+        db.run('PRAGMA foreign_keys = ON'); // Enable Foreign Keys
+    }
+});
+
+function initDB() {
+    db.serialize(() => {
+        // Users Table
+        db.run(`CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      role TEXT DEFAULT 'user',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+        // Categories Table
+        db.run(`CREATE TABLE IF NOT EXISTS categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL,
+      color TEXT DEFAULT '#6366f1'
+    )`);
+
+        // Tasks Table
+        db.run(`CREATE TABLE IF NOT EXISTS tasks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      description TEXT,
+      urgency TEXT CHECK(urgency IN ('low', 'medium', 'high')) DEFAULT 'medium',
+      status TEXT CHECK(status IN ('pending', 'in-progress', 'done')) DEFAULT 'pending',
+      category_id INTEGER,
+      created_by INTEGER,
+      due_date DATETIME,
+      attachment_url TEXT,
+      recurrence TEXT DEFAULT 'none', -- none, daily, weekly, monthly
+      is_recurring_parent BOOLEAN DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(category_id) REFERENCES categories(id),
+      FOREIGN KEY(created_by) REFERENCES users(id)
+    )`);
+
+        // Task Notes (Chat) Table
+        db.run(`CREATE TABLE IF NOT EXISTS task_notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+      FOREIGN KEY(user_id) REFERENCES users(id)
+    )`);
+
+        // Category Permissions
+        db.run(`CREATE TABLE IF NOT EXISTS user_category_permissions (
+      user_id INTEGER NOT NULL,
+      category_id INTEGER NOT NULL,
+      PRIMARY KEY(user_id, category_id),
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE CASCADE
+    )`);
+
+        // Notification Read tracking
+        db.run(`CREATE TABLE IF NOT EXISTS task_notifications_read (
+      user_id INTEGER NOT NULL,
+      task_id INTEGER NOT NULL,
+      read_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY(user_id, task_id),
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE
+    )`);
+
+        // Migration: Add columns to tasks if they don't exist
+        db.run(`ALTER TABLE tasks ADD COLUMN recurrence TEXT DEFAULT 'none'`, (err) => {
+            if (err && !err.message.includes('duplicate column name')) {
+                console.error('Migration error (recurrence):', err.message);
+            }
+        });
+        db.run(`ALTER TABLE tasks ADD COLUMN is_recurring_parent BOOLEAN DEFAULT 0`, (err) => {
+            if (err && !err.message.includes('duplicate column name')) {
+                console.error('Migration error (is_recurring_parent):', err.message);
+            }
+        });
+        db.run(`ALTER TABLE tasks ADD COLUMN parent_id INTEGER`, (err) => {
+            if (err && !err.message.includes('duplicate column name')) {
+                console.error('Migration error (parent_id):', err.message);
+            }
+        });
+
+        // Basic Seed for Categories if empty
+        db.get("SELECT count(*) as count FROM categories", (err, row) => {
+            if (row && row.count === 0) {
+                const stmt = db.prepare("INSERT INTO categories (name, color) VALUES (?, ?)");
+                stmt.run("General", "#94a3b8");
+                stmt.run("Desarrollo", "#6366f1");
+                stmt.run("Marketing", "#ec4899");
+                stmt.finalize();
+                console.log("Seeded basic categories.");
+            }
+        });
+    });
+}
+
+initDB();
+
+module.exports = db;
