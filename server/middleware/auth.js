@@ -1,7 +1,6 @@
-const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
+const { auth, db: firestore } = require('../firebase');
 
-function verifyToken(req, res, next) {
+async function verifyToken(req, res, next) {
     const tokenHeader = req.headers['authorization'];
 
     if (!tokenHeader) {
@@ -10,22 +9,27 @@ function verifyToken(req, res, next) {
 
     const token = tokenHeader.split(' ')[1]; // Bearer <token>
 
-    console.log(`[AUTH DEBUG] Verifying token: ${token.substring(0, 10)}...`);
+    try {
+        const decodedToken = await auth.verifyIdToken(token);
+        const uid = decodedToken.uid;
 
-    jwt.verify(token, JWT_SECRET, (err, decoded) => {
-        if (err) {
-            console.error('[AUTH DEBUG] JWT Verification Failed:', err.message);
-            return res.status(500).json({ auth: false, message: 'Failed to authenticate token.', error: err.message });
+        // Get user metadata from Firestore
+        const userDoc = await firestore.collection('users').doc(uid).get();
+        if (!userDoc.exists) {
+            return res.status(404).json({ error: 'User details not found' });
         }
 
-        console.log(`[AUTH DEBUG] Token verified for user: ${decoded.username} (${decoded.role})`);
+        const userData = userDoc.data();
 
         // Save to request for use in other routes
-        req.userId = decoded.id;
-        req.userName = decoded.username;
-        req.userRole = decoded.role;
+        req.userId = uid;
+        req.userName = userData.username;
+        req.userRole = userData.role;
         next();
-    });
+    } catch (error) {
+        console.error('[AUTH DEBUG] Token verification failed:', error.message);
+        return res.status(401).json({ auth: false, message: 'Unauthorized', error: error.message });
+    }
 }
 
 module.exports = verifyToken;

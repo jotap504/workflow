@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
 const Register = () => {
-    const [formData, setFormData] = useState({ username: '', password: '', role: 'user' });
+    const [formData, setFormData] = useState({ username: '', email: '', password: '', role: 'user' });
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
@@ -13,7 +13,7 @@ const Register = () => {
         setMessage('');
 
         try {
-            const response = await fetch('http://localhost:3000/api/auth/register', {
+            const response = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),
@@ -70,7 +70,7 @@ const Register = () => {
                 )}
 
                 <form onSubmit={handleSubmit}>
-                    <div style={{ marginBottom: '1.5rem' }}>
+                    <div style={{ marginBottom: '1rem' }}>
                         <label style={{ display: 'block', marginBottom: '0.5rem' }}>Usuario</label>
                         <input
                             type="text"
@@ -88,7 +88,25 @@ const Register = () => {
                         />
                     </div>
 
-                    <div style={{ marginBottom: '1.5rem' }}>
+                    <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Email</label>
+                        <input
+                            type="email"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            className="glass-panel"
+                            style={{
+                                width: '100%',
+                                padding: '0.75rem',
+                                border: '1px solid var(--card-border)',
+                                outline: 'none',
+                                color: 'inherit'
+                            }}
+                            required
+                        />
+                    </div>
+
+                    <div style={{ marginBottom: '1rem' }}>
                         <label style={{ display: 'block', marginBottom: '0.5rem' }}>Contraseña</label>
                         <input
                             type="password"

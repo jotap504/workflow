@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const { login } = useAuth();
@@ -12,7 +12,7 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        const result = await login(username, password);
+        const result = await login(email, password);
         if (result.success) {
             navigate('/');
         } else {
@@ -45,11 +45,11 @@ const Login = () => {
 
                 <form onSubmit={handleSubmit}>
                     <div style={{ marginBottom: '1.5rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Usuario</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem' }}>Email</label>
                         <input
-                            type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             className="glass-panel"
                             style={{
                                 width: '100%',
@@ -58,7 +58,7 @@ const Login = () => {
                                 outline: 'none',
                                 color: 'inherit'
                             }}
-                            placeholder="admin"
+                            placeholder="user@example.com"
                         />
                     </div>
 

@@ -68,6 +68,10 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Internal Server Error' });
 });
 
-server.listen(PORT, () => {
-    console.log(`[SERVER] Success: Running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+    server.listen(PORT, () => {
+        console.log(`[SERVER] Success: Running on port ${PORT}`);
+    });
+}
+
+module.exports = app;

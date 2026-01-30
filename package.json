@@ -2,13 +2,14 @@
     "name": "workflow-app",
     "version": "1.0.0",
     "description": "Unified Workflow Application",
+    "workspaces": [
+        "client",
+        "server"
+    ],
     "scripts": {
-        "install-client": "cd client && npm install",
-        "install-server": "cd server && npm install",
-        "install-all": "npm run install-server && npm run install-client",
-        "build-client": "cd client && npm run build",
-        "start": "cd server && npm start",
-        "build": "npm run install-all && npm run build-client"
+        "build": "npm run build -w client",
+        "start": "npm start -w server",
+        "dev": "npm run dev -w server & npm run dev -w client"
     },
     "keywords": [],
     "author": "",

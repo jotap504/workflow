@@ -1,91 +1,100 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const db = require('../db');
+const { auth, db: firestore } = require('../firebase');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
+// Register User
+router.post('/register', async (req, res) => {
+    const { email, password, username, role } = req.body;
 
-// Register User (Admin only technically, but open for now for dev)
-router.post('/register', (req, res) => {
-    const { username, password, role } = req.body;
-
-    if (!username || !password) {
-        return res.status(400).json({ error: 'Username and password are required' });
+    if (!email || !password || !username) {
+        return res.status(400).json({ error: 'Email, username and password are required' });
     }
 
-    const hashedPassword = bcrypt.hashSync(password, 8);
-    const userRole = role || 'user';
+    try {
+        // 1. Create user in Firebase Auth
+        const userRecord = await auth.createUser({
+            email,
+            password,
+            displayName: username,
+        });
 
-    const sql = `INSERT INTO users (username, password, role) VALUES (?, ?, ?)`;
-
-    db.run(sql, [username, hashedPassword, userRole], function (err) {
-        if (err) {
-            if (err.message.includes('UNIQUE constraint failed')) {
-                return res.status(400).json({ error: 'Username already exists' });
-            }
-            return res.status(500).json({ error: err.message });
-        }
+        // 2. Store additional metadata in Firestore
+        const userRole = role || 'user';
+        await firestore.collection('users').doc(userRecord.uid).set({
+            username,
+            email,
+            role: userRole,
+            created_at: new Date().toISOString()
+        });
 
         res.status(201).json({
             message: 'User created successfully',
-            userId: this.lastID
+            userId: userRecord.uid
         });
-    });
+    } catch (error) {
+        console.error('[AUTH ERROR] Registration failed:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
-// Login
-router.post('/login', (req, res) => {
-    const { username, password } = req.body;
+// Login (Verify Token from Frontend)
+router.post('/login', async (req, res) => {
+    const { idToken } = req.body;
 
-    const sql = `SELECT * FROM users WHERE username = ?`;
+    if (!idToken) {
+        return res.status(400).json({ error: 'ID Token is required' });
+    }
 
-    db.get(sql, [username], (err, user) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (!user) return res.status(404).json({ error: 'User not found' });
+    try {
+        // 1. Verify the token
+        const decodedToken = await auth.verifyIdToken(idToken);
+        const uid = decodedToken.uid;
 
-        const passwordIsValid = bcrypt.compareSync(password, user.password);
+        // 2. Get user data from Firestore
+        const userDoc = await firestore.collection('users').doc(uid).get();
 
-        if (!passwordIsValid) {
-            return res.status(401).json({ auth: false, token: null, error: 'Invalid Password' });
+        if (!userDoc.exists) {
+            return res.status(404).json({ error: 'User details not found' });
         }
 
-        const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, {
-            expiresIn: 86400 // 24 hours
-        });
+        const userData = userDoc.data();
 
-        res.status(200).json({ auth: true, token: token, user: { id: user.id, username: user.username, role: user.role } });
-    });
+        // Note: For compatibility with existing frontend, we return a token (though Firebase manages it)
+        // and user object. 
+        res.status(200).json({
+            auth: true,
+            token: idToken,
+            user: {
+                id: uid,
+                username: userData.username,
+                role: userData.role
+            }
+        });
+    } catch (error) {
+        console.error('[AUTH ERROR] Login verification failed:', error);
+        res.status(401).json({ auth: false, error: 'Unauthorized' });
+    }
 });
 
 const verifyToken = require('../middleware/auth');
 
-// Change Password (Self)
-router.put('/profile/password', verifyToken, (req, res) => {
-    const { currentPassword, newPassword } = req.body;
-    const userId = req.userId;
+// Change Password (handled via Firebase Auth normally, but keeping shim)
+router.put('/profile/password', verifyToken, async (req, res) => {
+    const { newPassword } = req.body;
+    const uid = req.userId;
 
-    if (!currentPassword || !newPassword) {
-        return res.status(400).json({ error: 'Current and new password are required' });
+    if (!newPassword) {
+        return res.status(400).json({ error: 'New password is required' });
     }
 
-    const sql = `SELECT password FROM users WHERE id = ?`;
-    db.get(sql, [userId], (err, user) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (!user) return res.status(404).json({ error: 'User not found' });
-
-        const passwordIsValid = bcrypt.compareSync(currentPassword, user.password);
-        if (!passwordIsValid) {
-            return res.status(401).json({ error: 'Incorrect current password' });
-        }
-
-        const hashedNewPassword = bcrypt.hashSync(newPassword, 8);
-        const updateSql = `UPDATE users SET password = ? WHERE id = ?`;
-        db.run(updateSql, [hashedNewPassword, userId], function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'Password updated successfully' });
+    try {
+        await auth.updateUser(uid, {
+            password: newPassword
         });
-    });
+        res.json({ message: 'Password updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 module.exports = router;

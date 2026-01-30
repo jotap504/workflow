@@ -4,10 +4,47 @@ const bcrypt = require('bcryptjs');
 
 const dbPath = path.resolve(__dirname, 'workflow.db');
 const isProd = process.env.DATABASE_URL;
+const isFirebase = process.env.USE_FIREBASE === 'true' || process.env.VERCEL === '1';
 
 let db;
 
-if (isProd) {
+if (isFirebase) {
+    const { db: firestore } = require('./firebase');
+
+    // Wrapper to mimic sqlite3's API using Firestore
+    // Note: This is an abstraction for basic CRUD. 
+    // Complex queries will need specialized Firestore logic.
+    db = {
+        run: async (sql, params, cb) => {
+            console.log('[FIRESTORE] Run:', sql);
+            // Basic implementation details for migrations (we skip these in Firestore or handle as collections)
+            if (sql.includes('CREATE TABLE') || sql.includes('ALTER TABLE')) {
+                if (cb) cb(null);
+                return;
+            }
+            // For actual data writes, we'll need to map SQL to Firestore
+            if (cb) cb(new Error("Generic SQL 'run' not fully implemented for Firestore shim. Use specific methods for migration."));
+        },
+        get: (sql, params, cb) => {
+            console.log('[FIRESTORE] Get:', sql);
+            // This will be implemented as we migrate specific routes
+            if (cb) cb(null, null);
+        },
+        all: (sql, params, cb) => {
+            console.log('[FIRESTORE] All:', sql);
+            if (cb) cb(null, []);
+        },
+        serialize: (fn) => fn(),
+        close: () => { },
+        prepare: (sql) => {
+            return {
+                run: (params, cb) => { if (cb) cb(null); },
+                finalize: () => { }
+            };
+        }
+    };
+    console.log('Connected to Firebase Firestore (Serverless Mode)');
+} else if (isProd) {
     const { Pool } = require('pg');
     const pool = new Pool({
         connectionString: process.env.DATABASE_URL,
@@ -177,6 +214,8 @@ function initDB() {
     });
 }
 
-initDB();
+if (!isFirebase) {
+    initDB();
+}
 
 module.exports = db;
