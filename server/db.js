@@ -3,15 +3,67 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 
 const dbPath = path.resolve(__dirname, 'workflow.db');
+const isProd = process.env.DATABASE_URL;
 
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error('Error opening database ' + dbPath + ': ' + err.message);
-    } else {
-        console.log('Connected to the SQLite database.');
-        db.run('PRAGMA foreign_keys = ON'); // Enable Foreign Keys
-    }
-});
+let db;
+
+if (isProd) {
+    const { Pool } = require('pg');
+    const pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: {
+            rejectUnauthorized: false
+        }
+    });
+
+    // Wrapper to mimic sqlite3's API loosely for basic methods
+    db = {
+        run: (sql, params, cb) => {
+            // Convert ? to $1, $2 etc for Postgres
+            let count = 0;
+            const pgSql = sql.replace(/\?/g, () => `$${++count}`);
+            pool.query(pgSql, Array.isArray(params) ? params : [], (err, res) => {
+                if (cb) cb(err, res);
+            });
+        },
+        get: (sql, params, cb) => {
+            let count = 0;
+            const pgSql = sql.replace(/\?/g, () => `$${++count}`);
+            pool.query(pgSql, Array.isArray(params) ? params : [], (err, res) => {
+                if (cb) cb(err, res ? res.rows[0] : null);
+            });
+        },
+        all: (sql, params, cb) => {
+            let count = 0;
+            const pgSql = sql.replace(/\?/g, () => `$${++count}`);
+            pool.query(pgSql, Array.isArray(params) ? params : [], (err, res) => {
+                if (cb) cb(err, res ? res.rows : []);
+            });
+        },
+        serialize: (fn) => fn(), // Postgres is already async/buffered
+        close: () => pool.end(),
+        prepare: (sql) => {
+            return {
+                run: (params, cb) => {
+                    let count = 0;
+                    const pgSql = sql.replace(/\?/g, () => `$${++count}`);
+                    pool.query(pgSql, Array.isArray(params) ? params : [], cb);
+                },
+                finalize: () => { }
+            };
+        }
+    };
+    console.log('Connected to PostgreSQL (Production Mode)');
+} else {
+    db = new sqlite3.Database(dbPath, (err) => {
+        if (err) {
+            console.error('Error opening database ' + dbPath + ': ' + err.message);
+        } else {
+            console.log('Connected to the SQLite database.');
+            db.run('PRAGMA foreign_keys = ON'); // Enable Foreign Keys
+        }
+    });
+}
 
 function initDB() {
     db.serialize(() => {
@@ -97,13 +149,16 @@ function initDB() {
         });
 
         // Basic Seed for Categories if empty
-        db.get("SELECT count(*) as count FROM categories", (err, row) => {
+        db.get("SELECT count(*) as count FROM categories", [], (err, row) => {
             if (row && row.count === 0) {
-                const stmt = db.prepare("INSERT INTO categories (name, color) VALUES (?, ?)");
-                stmt.run("General", "#94a3b8");
-                stmt.run("Desarrollo", "#6366f1");
-                stmt.run("Marketing", "#ec4899");
-                stmt.finalize();
+                const names = ["General", "Desarrollo", "Marketing"];
+                const colors = ["#94a3b8", "#6366f1", "#ec4899"];
+
+                names.forEach((name, i) => {
+                    db.run("INSERT INTO categories (name, color) VALUES (?, ?)", [name, colors[i]], (err) => {
+                        if (err) console.error("Error seeding categories:", err.message);
+                    });
+                });
                 console.log("Seeded basic categories.");
             }
         });
