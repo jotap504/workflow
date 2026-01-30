@@ -4,6 +4,7 @@ const { auth, db: firestore } = require('../firebase');
 
 // Register User
 router.post('/register', async (req, res) => {
+    console.log('[DEBUG] POST /api/auth/register hit with body:', req.body);
     const { email, password, username, role } = req.body;
 
     if (!email || !password || !username) {

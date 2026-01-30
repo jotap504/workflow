@@ -21,8 +21,14 @@ const Register = () => {
 
             const data = await response.json();
 
+            console.log('[DEBUG] Registration response:', {
+                status: response.status,
+                ok: response.ok,
+                data
+            });
+
             if (!response.ok) {
-                throw new Error(data.error || 'Registration failed');
+                throw new Error(data.error || `Registration failed (Status: ${response.status})`);
             }
 
             setMessage('User created successfully! Redirecting to login...');
