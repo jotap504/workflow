@@ -13,13 +13,16 @@ router.post('/register', async (req, res) => {
 
     try {
         // 1. Create user in Firebase Auth
+        console.log('[DEBUG] Step 1: Creating user in Firebase Auth...');
         const userRecord = await auth.createUser({
             email,
             password,
             displayName: username,
         });
+        console.log('[DEBUG] Step 1 Success: User created with UID:', userRecord.uid);
 
         // 2. Store additional metadata in Firestore
+        console.log('[DEBUG] Step 2: Storing metadata in Firestore...');
         const userRole = role || 'user';
         await firestore.collection('users').doc(userRecord.uid).set({
             username,
@@ -27,6 +30,7 @@ router.post('/register', async (req, res) => {
             role: userRole,
             created_at: new Date().toISOString()
         });
+        console.log('[DEBUG] Step 2 Success: Metadata stored in Firestore');
 
         res.status(201).json({
             message: 'User created successfully',
