@@ -33,8 +33,12 @@ router.post('/register', async (req, res) => {
             userId: userRecord.uid
         });
     } catch (error) {
-        console.error('[AUTH ERROR] Registration failed:', error);
-        res.status(500).json({ error: error.message });
+        console.error('[AUTH ERROR] Registration failed details:', error);
+        res.status(500).json({
+            error: error.message,
+            code: error.code,
+            details: error
+        });
     }
 });
 
