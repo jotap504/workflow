@@ -3,16 +3,20 @@
     "rewrites": [
         {
             "source": "/api/(.*)",
-            "destination": "/server/index.js"
+            "destination": "/api/index.js"
+        },
+        {
+            "source": "/uploads/(.*)",
+            "destination": "/server/uploads/$1"
         },
         {
             "source": "/(.*)",
-            "destination": "/client/dist/$1"
+            "destination": "/client/dist/index.html"
         }
     ],
     "builds": [
         {
-            "src": "server/index.js",
+            "src": "api/index.js",
             "use": "@vercel/node"
         },
         {
