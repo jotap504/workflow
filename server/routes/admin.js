@@ -16,7 +16,22 @@ router.use(verifyToken);
 router.use(isAdmin);
 
 // GET /api/admin/users - List all users
-router.get('/users', (req, res) => {
+router.get('/users', async (req, res) => {
+    if (db.isFirebase) {
+        try {
+            const snapshot = await db.collection('users').orderBy('username', 'asc').get();
+            const users = snapshot.docs.map(doc => ({
+                id: doc.id,
+                username: doc.data().username,
+                role: doc.data().role,
+                created_at: doc.data().created_at
+            }));
+            return res.json(users);
+        } catch (err) {
+            return res.status(500).json({ error: err.message });
+        }
+    }
+
     const sql = 'SELECT id, username, role, created_at FROM users ORDER BY username ASC';
     db.all(sql, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -25,12 +40,21 @@ router.get('/users', (req, res) => {
 });
 
 // PUT /api/admin/users/:id - Update user role
-router.put('/users/:id', (req, res) => {
+router.put('/users/:id', async (req, res) => {
     const { role } = req.body;
     const userId = req.params.id;
 
     if (!['admin', 'user', 'manager'].includes(role)) {
         return res.status(400).json({ error: 'Invalid role' });
+    }
+
+    if (db.isFirebase) {
+        try {
+            await db.collection('users').doc(userId).update({ role });
+            return res.json({ message: 'User updated successfully' });
+        } catch (err) {
+            return res.status(500).json({ error: err.message });
+        }
     }
 
     const sql = 'UPDATE users SET role = ? WHERE id = ?';
@@ -42,12 +66,32 @@ router.put('/users/:id', (req, res) => {
 });
 
 // DELETE /api/admin/users/:id - Delete user
-router.delete('/users/:id', (req, res) => {
+router.delete('/users/:id', async (req, res) => {
     const userId = req.params.id;
 
-    // Prevent deleting self? Optional but good.
-    if (parseInt(userId) === req.userId) {
+    if (userId === req.userId.toString()) {
         return res.status(400).json({ error: 'Cannot delete your own account' });
+    }
+
+    if (db.isFirebase) {
+        const { auth: adminAuth } = require('../firebase');
+        try {
+            // 1. Delete from Firebase Auth
+            await adminAuth.deleteUser(userId).catch(e => console.log('Auth user already deleted or not found'));
+
+            // 2. Delete from Firestore users collection
+            await db.collection('users').doc(userId).delete();
+
+            // 3. Delete permissions
+            const perms = await db.collection('user_category_permissions').where('user_id', '==', userId).get();
+            const batch = db.batch();
+            perms.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+
+            return res.json({ message: 'User deleted successfully' });
+        } catch (err) {
+            return res.status(500).json({ error: err.message });
+        }
     }
 
     const sql = 'DELETE FROM users WHERE id = ?';
@@ -59,12 +103,22 @@ router.delete('/users/:id', (req, res) => {
 });
 
 // PUT /api/admin/users/:id/reset-password - Reset user password
-router.put('/users/:id/reset-password', (req, res) => {
+router.put('/users/:id/reset-password', async (req, res) => {
     const { password } = req.body;
     const userId = req.params.id;
 
     if (!password) {
         return res.status(400).json({ error: 'Password is required' });
+    }
+
+    if (db.isFirebase) {
+        const { auth: adminAuth } = require('../firebase');
+        try {
+            await adminAuth.updateUser(userId, { password });
+            return res.json({ message: 'Password reset successfully' });
+        } catch (err) {
+            return res.status(500).json({ error: err.message });
+        }
     }
 
     const hashedPassword = bcrypt.hashSync(password, 8);
@@ -78,8 +132,18 @@ router.put('/users/:id/reset-password', (req, res) => {
 });
 
 // GET /api/admin/users/:id/categories - Get user's permitted categories
-router.get('/users/:id/categories', (req, res) => {
+router.get('/users/:id/categories', async (req, res) => {
     const userId = req.params.id;
+
+    if (db.isFirebase) {
+        try {
+            const snapshot = await db.collection('user_category_permissions').where('user_id', '==', userId).get();
+            return res.json(snapshot.docs.map(doc => doc.data().category_id));
+        } catch (err) {
+            return res.status(500).json({ error: err.message });
+        }
+    }
+
     const sql = 'SELECT category_id FROM user_category_permissions WHERE user_id = ?';
     db.all(sql, [userId], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -88,12 +152,32 @@ router.get('/users/:id/categories', (req, res) => {
 });
 
 // POST /api/admin/users/:id/categories - Update user's permitted categories
-router.post('/users/:id/categories', (req, res) => {
+router.post('/users/:id/categories', async (req, res) => {
     const userId = req.params.id;
-    const { categoryIds } = req.body; // Expecting an array [1, 2, 3]
+    const { categoryIds } = req.body;
 
     if (!Array.isArray(categoryIds)) {
         return res.status(400).json({ error: 'categoryIds must be an array' });
+    }
+
+    if (db.isFirebase) {
+        try {
+            // Delete existing
+            const existing = await db.collection('user_category_permissions').where('user_id', '==', userId).get();
+            const batch = db.batch();
+            existing.forEach(doc => batch.delete(doc.ref));
+
+            // Add new
+            categoryIds.forEach(catId => {
+                const ref = db.collection('user_category_permissions').doc(`${userId}_${catId}`);
+                batch.set(ref, { user_id: userId, category_id: catId });
+            });
+
+            await batch.commit();
+            return res.json({ message: 'Permissions updated successfully' });
+        } catch (err) {
+            return res.status(500).json({ error: err.message });
+        }
     }
 
     db.serialize(() => {

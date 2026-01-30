@@ -6,80 +6,105 @@ const verifyToken = require('../middleware/auth');
 router.use(verifyToken);
 
 // GET /api/notifications - Get smart notifications
-router.get('/', (req, res) => {
-    try {
-        console.log(`[DEBUG] Notification Request: UserID=${req.userId}, Role=${req.userRole}`);
+router.get('/', async (req, res) => {
+    if (db.isFirebase) {
+        try {
+            // 1. Get all pending tasks
+            const tasksSnap = await db.collection('tasks').where('status', '!=', 'done').get();
+            let tasks = tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // Standardized Non-Admin SQL
-        const sql = `
-            SELECT t.*, u.username as creator_name,
-                   CASE WHEN t.urgency = 'high' THEN 'urgent' ELSE 'new' END as notif_type
-            FROM tasks t
-            LEFT JOIN users u ON t.created_by = u.id
-            LEFT JOIN task_notifications_read nr ON t.id = nr.task_id AND nr.user_id = ?
-            LEFT JOIN user_category_permissions ucp ON t.category_id = ucp.category_id AND ucp.user_id = ?
-            WHERE t.status != 'done'
-            AND nr.task_id IS NULL
-            AND (t.created_by != ? OR t.urgency = 'high')
-            AND (
-                t.category_id IS NULL 
-                OR t.category_id = '' 
-                OR ucp.category_id IS NOT NULL
-            )
-            AND (
-                t.id = (
-                    SELECT MIN(id) 
-                    FROM tasks 
-                    WHERE COALESCE(parent_id, id) = COALESCE(t.parent_id, t.id)
-                    AND status != 'done'
-                )
-            )
-            ORDER BY (CASE WHEN t.urgency = 'high' THEN 1 ELSE 0 END) DESC, t.created_at DESC
-        `;
+            // 2. Get read notifications for this user
+            const readSnap = await db.collection('task_notifications_read').where('user_id', '==', req.userId).get();
+            const readTaskIds = readSnap.docs.map(doc => doc.data().task_id);
 
-        // Standardized Admin SQL
-        const adminSql = `
-            SELECT t.*, u.username as creator_name,
-                   CASE WHEN t.urgency = 'high' THEN 'urgent' ELSE 'new' END as notif_type
-            FROM tasks t
-            LEFT JOIN users u ON t.created_by = u.id
-            LEFT JOIN task_notifications_read nr ON t.id = nr.task_id AND nr.user_id = ?
-            WHERE t.status != 'done'
-            AND nr.task_id IS NULL
-            AND (t.created_by != ? OR t.urgency = 'high')
-            AND (
-                t.id = (
-                    SELECT MIN(id) 
-                    FROM tasks 
-                    WHERE COALESCE(parent_id, id) = COALESCE(t.parent_id, t.id)
-                    AND status != 'done'
-                )
-            )
-            ORDER BY (CASE WHEN t.urgency = 'high' THEN 1 ELSE 0 END) DESC, t.created_at DESC
-        `;
+            // 3. Filter out read tasks
+            tasks = tasks.filter(t => !readTaskIds.includes(t.id));
 
-        const isPrivileged = req.userRole === 'admin' || req.userRole === 'manager';
-        const finalSql = isPrivileged ? adminSql : sql;
-        const params = isPrivileged ? [req.userId, req.userId] : [req.userId, req.userId, req.userId];
+            // 4. Filter by creator (unless high urgency)
+            tasks = tasks.filter(t => t.created_by !== req.userId || t.urgency === 'high');
 
-        db.all(finalSql, params, (err, rows) => {
-            if (err) {
-                console.error('[DATABASE ERROR] Notification SQL:', err.message);
-                return res.status(500).json({ error: err.message });
+            // 5. Filter by permissions if not admin/manager
+            const isPrivileged = req.userRole === 'admin' || req.userRole === 'manager';
+            if (!isPrivileged) {
+                const permissionsSnapshot = await db.collection('user_category_permissions')
+                    .where('user_id', '==', req.userId)
+                    .get();
+                const allowedCategories = permissionsSnapshot.docs.map(doc => doc.data().category_id);
+                tasks = tasks.filter(t => !t.category_id || allowedCategories.includes(t.category_id));
             }
-            console.log(`[DEBUG] Notifications query success: ${rows ? rows.length : 0} rows found`);
-            res.json(rows || []);
-        });
-    } catch (error) {
-        console.error('[CRITICAL] Error in GET /api/notifications:', error);
-        res.status(500).json({ error: 'Internal Server Error', details: error.message });
+
+            // 6. Apply Recurring Logic (mimic SQL: only earliest pending per series)
+            tasks = tasks.filter(t => {
+                if (t.recurrence === 'none' || !t.recurrence) return true;
+                const seriesId = t.parent_id || t.id;
+                const series = tasks.filter(st => (st.parent_id || st.id) === seriesId);
+                const earliestPending = series.sort((a, b) => (a.due_date || '').localeCompare(b.due_date || ''))[0];
+                return t.id === earliestPending.id;
+            });
+
+            // 7. Enriched with creator name and notif_type
+            const enriched = await Promise.all(tasks.map(async t => {
+                const userDoc = t.created_by ? await db.collection('users').doc(t.created_by).get() : null;
+                return {
+                    ...t,
+                    creator_name: userDoc && userDoc.exists ? userDoc.data().username : 'Desconocido',
+                    notif_type: t.urgency === 'high' ? 'urgent' : 'new'
+                };
+            }));
+
+            // Sort: Urgent first, then by date
+            enriched.sort((a, b) => {
+                if (a.urgency === 'high' && b.urgency !== 'high') return -1;
+                if (a.urgency !== 'high' && b.urgency === 'high') return 1;
+                return (b.created_at || '').localeCompare(a.created_at || '');
+            });
+
+            return res.json(enriched);
+        } catch (err) {
+            console.error('[NOTIFICATIONS GET ERROR]', err);
+            return res.status(500).json({ error: err.message });
+        }
+    } else {
+        // SQL fallback... (already in the file but I need to close the brace above)
+        try {
+            const isPrivileged = req.userRole === 'admin' || req.userRole === 'manager';
+            const sql = isPrivileged ? `
+             SELECT t.*, u.username as creator_name,
+                    CASE WHEN t.urgency = 'high' THEN 'urgent' ELSE 'new' END as notif_type
+             FROM tasks t
+             LEFT JOIN users u ON t.created_by = u.id
+             LEFT JOIN task_notifications_read nr ON t.id = nr.task_id AND nr.user_id = ?
+             WHERE t.status != 'done'
+             AND nr.task_id IS NULL
+             AND (t.created_by != ? OR t.urgency = 'high')
+             ORDER BY (CASE WHEN t.urgency = 'high' THEN 1 ELSE 0 END) DESC, t.created_at DESC
+         ` : `
+             SELECT t.*, u.username as creator_name,
+                    CASE WHEN t.urgency = 'high' THEN 'urgent' ELSE 'new' END as notif_type
+             FROM tasks t
+             LEFT JOIN users u ON t.created_by = u.id
+             LEFT JOIN task_notifications_read nr ON t.id = nr.task_id AND nr.user_id = ?
+             LEFT JOIN user_category_permissions ucp ON t.category_id = ucp.category_id AND ucp.user_id = ?
+             WHERE t.status != 'done'
+             AND nr.task_id IS NULL
+             AND (t.created_by != ? OR t.urgency = 'high')
+             AND (t.category_id IS NULL OR ucp.category_id IS NOT NULL)
+             ORDER BY (CASE WHEN t.urgency = 'high' THEN 1 ELSE 0 END) DESC, t.created_at DESC
+         `;
+            const params = isPrivileged ? [req.userId, req.userId] : [req.userId, req.userId, req.userId];
+            db.all(sql, params, (err, rows) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json(rows || []);
+            });
+        } catch (e) {
+            res.status(500).json({ error: e.message });
+        }
     }
 });
 
 // GET /api/notifications/debug-info - Emergency diagnostic endpoint
-router.get('/debug-info', (req, res) => {
+router.get('/debug-info', async (req, res) => {
     try {
-        console.log('[DEBUG] debug-info endpoint hit');
         const info = {
             userId: req.userId,
             userName: req.userName,
@@ -87,43 +112,82 @@ router.get('/debug-info', (req, res) => {
             timestamp: new Date().toISOString()
         };
 
-        db.get('SELECT COUNT(*) as count FROM tasks WHERE status != "done"', [], (err, row) => {
-            if (err) {
-                console.error('[DATABASE ERROR] debug-info tasks count:', err.message);
-                info.error = err.message;
-            } else {
-                info.totalPendingTasks = row ? row.count : 0;
-            }
-            res.json(info);
-        });
+        if (db.isFirebase) {
+            const snap = await db.collection('tasks').where('status', '!=', 'done').get();
+            info.totalPendingTasks = snap.size;
+        } else {
+            const row = await new Promise((resolve, reject) => {
+                db.get('SELECT COUNT(*) as count FROM tasks WHERE status != "done"', [], (err, row) => {
+                    if (err) reject(err); else resolve(row);
+                });
+            });
+            info.totalPendingTasks = row ? row.count : 0;
+        }
+        res.json(info);
     } catch (error) {
-        console.error('[CRITICAL] Error in /debug-info:', error);
         res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
 });
 
 // POST /api/notifications/read - Mark a notification as read
-router.post('/read', (req, res) => {
+router.post('/read', async (req, res) => {
     try {
         const { taskId } = req.body;
         if (!taskId) return res.status(400).json({ error: 'taskId required' });
 
-        console.log(`[DEBUG] Marking Task Read: UserID=${req.userId}, TaskID=${taskId}`);
+        if (db.isFirebase) {
+            // Check if already exists to avoid duplicates
+            const existing = await db.collection('task_notifications_read')
+                .where('user_id', '==', req.userId)
+                .where('task_id', '==', taskId)
+                .get();
+
+            if (existing.empty) {
+                await db.collection('task_notifications_read').add({
+                    user_id: req.userId,
+                    task_id: taskId,
+                    read_at: new Date().toISOString()
+                });
+            }
+            return res.json({ message: 'Marked as read' });
+        }
+
         const sql = 'INSERT OR IGNORE INTO task_notifications_read (user_id, task_id) VALUES (?, ?)';
         db.run(sql, [req.userId, taskId], function (err) {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ message: 'Marked as read' });
         });
     } catch (error) {
-        console.error('[CRITICAL] Error in /read:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
 
 // POST /api/notifications/read-all - Mark all current as read
-router.post('/read-all', (req, res) => {
+router.post('/read-all', async (req, res) => {
     try {
-        console.log(`[DEBUG] Mark All Read Request: UserID=${req.userId}`);
+        if (db.isFirebase) {
+            // Get all visible pending tasks that aren't read yet
+            // (Reusing logic from GET route but bulk adding)
+            const tasksSnap = await db.collection('tasks').where('status', '!=', 'done').get();
+            let tasks = tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Filter by creator (standard logic: can't read-all own notifications unless urgent, 
+            // but usually read-all is for the list user sees)
+            tasks = tasks.filter(t => t.created_by !== req.userId);
+
+            const batch = db.batch();
+            for (const t of tasks) {
+                const readRef = db.collection('task_notifications_read').doc(`${req.userId}_${t.id}`);
+                batch.set(readRef, {
+                    user_id: req.userId,
+                    task_id: t.id,
+                    read_at: new Date().toISOString()
+                });
+            }
+            await batch.commit();
+            return res.json({ message: 'All marked as read' });
+        }
+
         const sql = req.userRole === 'admin' ? `
             INSERT OR IGNORE INTO task_notifications_read (user_id, task_id)
             SELECT ?, id FROM tasks WHERE status != 'done' AND created_by != ?
@@ -141,7 +205,6 @@ router.post('/read-all', (req, res) => {
             res.json({ message: 'All marked as read' });
         });
     } catch (error) {
-        console.error('[CRITICAL] Error in /read-all:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });

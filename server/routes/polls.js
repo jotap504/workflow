@@ -6,13 +6,43 @@ const verifyToken = require('../middleware/auth');
 router.use(verifyToken);
 
 // GET /api/polls - List all polls with usage stats
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
     const userId = req.userId;
 
-    // We need to fetch polls, their options, and vote counts.
-    // This can be complex in one query. Let's do it in steps or a smart join. 
-    // Or fetch all polls, then for each poll fetch options and votes.
-    // For simplicity/speed in SQLite: Fetch Polls -> Fetch Options+Counts -> Merge.
+    if (db.isFirebase) {
+        try {
+            const pollsSnap = await db.collection('polls').orderBy('created_at', 'desc').get();
+            const polls = pollsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            const pollsWithData = await Promise.all(polls.map(async p => {
+                const [optionsSnap, votesSnap, userVoteSnap] = await Promise.all([
+                    db.collection('poll_options').where('poll_id', '==', p.id).get(),
+                    db.collection('poll_votes').where('poll_id', '==', p.id).get(),
+                    db.collection('poll_votes').where('poll_id', '==', p.id).where('user_id', '==', userId).get()
+                ]);
+
+                const options = optionsSnap.docs.map(doc => {
+                    const optData = doc.data();
+                    return {
+                        id: doc.id,
+                        ...optData,
+                        vote_count: votesSnap.docs.filter(v => v.data().option_id === doc.id).length
+                    };
+                });
+
+                return {
+                    ...p,
+                    user_has_voted: !userVoteSnap.empty,
+                    options,
+                    total_votes: votesSnap.size
+                };
+            }));
+
+            return res.json(pollsWithData);
+        } catch (err) {
+            return res.status(500).json({ error: err.message });
+        }
+    }
 
     const pollsSql = `
         SELECT p.*, u.username as creator_name,
@@ -53,11 +83,36 @@ router.get('/', (req, res) => {
 });
 
 // POST /api/polls - Create Poll
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
     const { question, options } = req.body;
 
     if (!question || !options || !Array.isArray(options) || options.length < 2) {
         return res.status(400).json({ error: 'Question and at least 2 options are required.' });
+    }
+
+    if (db.isFirebase) {
+        try {
+            const pollRef = await db.collection('polls').add({
+                question,
+                created_by: req.userId,
+                status: 'open',
+                created_at: new Date().toISOString()
+            });
+
+            const batch = db.batch();
+            options.forEach(opt => {
+                const optRef = db.collection('poll_options').doc();
+                batch.set(optRef, {
+                    poll_id: pollRef.id,
+                    option_text: opt
+                });
+            });
+            await batch.commit();
+
+            return res.json({ message: 'Poll created', id: pollRef.id });
+        } catch (err) {
+            return res.status(500).json({ error: err.message });
+        }
     }
 
     db.serialize(() => {
@@ -89,12 +144,39 @@ router.post('/', (req, res) => {
 });
 
 // POST /api/polls/:id/vote - Vote
-router.post('/:id/vote', (req, res) => {
+router.post('/:id/vote', async (req, res) => {
     const pollId = req.params.id;
     const { option_id } = req.body;
     const userId = req.userId;
 
     if (!option_id) return res.status(400).json({ error: 'Option ID required' });
+
+    if (db.isFirebase) {
+        try {
+            const pollRef = db.collection('polls').doc(pollId);
+            const pollDoc = await pollRef.get();
+            if (!pollDoc.exists) return res.status(404).json({ error: 'Poll not found' });
+            if (pollDoc.data().status !== 'open') return res.status(400).json({ error: 'Poll is closed' });
+
+            const existingVote = await db.collection('poll_votes')
+                .where('poll_id', '==', pollId)
+                .where('user_id', '==', userId)
+                .get();
+
+            if (!existingVote.empty) return res.status(400).json({ error: 'You have already voted on this poll.' });
+
+            await db.collection('poll_votes').add({
+                poll_id: pollId,
+                option_id: option_id,
+                user_id: userId,
+                voted_at: new Date().toISOString()
+            });
+
+            return res.json({ message: 'Vote recorded' });
+        } catch (err) {
+            return res.status(500).json({ error: err.message });
+        }
+    }
 
     // Check if poll is open
     db.get('SELECT status FROM polls WHERE id = ?', [pollId], (err, poll) => {
@@ -115,8 +197,23 @@ router.post('/:id/vote', (req, res) => {
 });
 
 // PUT /api/polls/:id/close - Close Poll
-router.put('/:id/close', (req, res) => {
+router.put('/:id/close', async (req, res) => {
     const pollId = req.params.id;
+
+    if (db.isFirebase) {
+        try {
+            const pollRef = db.collection('polls').doc(pollId);
+            const pollDoc = await pollRef.get();
+            if (!pollDoc.exists) return res.status(404).json({ error: 'Poll not found' });
+            if (pollDoc.data().created_by !== req.userId) return res.status(403).json({ error: 'Not authorized' });
+
+            await pollRef.update({ status: 'closed' });
+            return res.json({ message: 'Poll closed' });
+        } catch (err) {
+            return res.status(500).json({ error: err.message });
+        }
+    }
+
     db.run('UPDATE polls SET status = "closed" WHERE id = ? AND created_by = ?', [pollId, req.userId], function (err) {
         if (err) return res.status(500).json({ error: err.message });
         if (this.changes === 0) return res.status(403).json({ error: 'Not authorized or Poll not found' });

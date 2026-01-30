@@ -13,7 +13,16 @@ const canManageCategories = (req, res, next) => {
     next();
 };
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
+    if (db.isFirebase) {
+        try {
+            const snapshot = await db.collection('categories').orderBy('name').get();
+            const categories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            return res.json(categories);
+        } catch (err) {
+            return res.status(500).json({ error: err.message });
+        }
+    }
     db.all('SELECT * FROM categories ORDER BY name', [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
@@ -21,9 +30,23 @@ router.get('/', (req, res) => {
 });
 
 // Create Category (Admin/Manager)
-router.post('/', canManageCategories, (req, res) => {
+router.post('/', canManageCategories, async (req, res) => {
     const { name, color } = req.body;
     if (!name) return res.status(400).json({ error: 'Name is required' });
+
+    if (db.isFirebase) {
+        try {
+            // Check uniqueness
+            const existing = await db.collection('categories').where('name', '==', name).get();
+            if (!existing.empty) return res.status(400).json({ error: 'Category exists' });
+
+            const docRef = await db.collection('categories').add({ name, color });
+            req.app.get('io').emit('tasks_updated');
+            return res.json({ id: docRef.id, name, color });
+        } catch (err) {
+            return res.status(500).json({ error: err.message });
+        }
+    }
 
     db.run('INSERT INTO categories (name, color) VALUES (?, ?)', [name, color], function (err) {
         if (err) {
@@ -37,11 +60,21 @@ router.post('/', canManageCategories, (req, res) => {
 });
 
 // Update Category (Admin/Manager)
-router.put('/:id', canManageCategories, (req, res) => {
+router.put('/:id', canManageCategories, async (req, res) => {
     const { name, color } = req.body;
     const { id } = req.params;
 
     if (!name) return res.status(400).json({ error: 'Name is required' });
+
+    if (db.isFirebase) {
+        try {
+            await db.collection('categories').doc(id).update({ name, color });
+            req.app.get('io').emit('tasks_updated');
+            return res.json({ message: 'Category updated successfully' });
+        } catch (err) {
+            return res.status(500).json({ error: err.message });
+        }
+    }
 
     db.run('UPDATE categories SET name = ?, color = ? WHERE id = ?', [name, color, id], function (err) {
         if (err) return res.status(500).json({ error: err.message });
@@ -53,8 +86,18 @@ router.put('/:id', canManageCategories, (req, res) => {
 });
 
 // Delete Category (Admin/Manager)
-router.delete('/:id', canManageCategories, (req, res) => {
+router.delete('/:id', canManageCategories, async (req, res) => {
     const { id } = req.params;
+
+    if (db.isFirebase) {
+        try {
+            await db.collection('categories').doc(id).delete();
+            req.app.get('io').emit('tasks_updated');
+            return res.json({ message: 'Category deleted successfully' });
+        } catch (err) {
+            return res.status(500).json({ error: err.message });
+        }
+    }
 
     db.run('DELETE FROM categories WHERE id = ?', [id], function (err) {
         if (err) return res.status(500).json({ error: err.message });

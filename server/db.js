@@ -8,51 +8,12 @@ const isFirebase = process.env.USE_FIREBASE === 'true' || process.env.VERCEL ===
 let db;
 
 if (isFirebase) {
-    const { db: firestore } = require('./firebase');
-
-    // Wrapper to mimic sqlite3's API using Firestore
-    // Note: This is an abstraction for basic CRUD. 
-    // Complex queries will need specialized Firestore logic.
-    db = {
-        run: function (sql, params, cb) {
-            console.log('[FIRESTORE] Shim Run:', sql);
-            // Handle cases where 'params' is optional
-            const callback = typeof params === 'function' ? params : cb;
-
-            // Basic implementation details for migrations (we skip these in Firestore or handle as collections)
-            if (sql.includes('CREATE TABLE') || sql.includes('ALTER TABLE')) {
-                if (callback) callback(null);
-                return;
-            }
-            // For actual data writes, we'll need to map SQL to Firestore
-            // For now, we return success to allow the server to start
-            if (callback) callback(null, { lastID: Date.now(), changes: 1 });
-        },
-        get: (sql, params, cb) => {
-            console.log('[FIRESTORE] Shim Get:', sql);
-            const callback = typeof params === 'function' ? params : cb;
-            // This will be implemented as we migrate specific routes
-            if (callback) callback(null, null);
-        },
-        all: (sql, params, cb) => {
-            console.log('[FIRESTORE] Shim All:', sql);
-            const callback = typeof params === 'function' ? params : cb;
-            if (callback) callback(null, []);
-        },
-        serialize: (fn) => fn(),
-        close: () => { },
-        prepare: (sql) => {
-            return {
-                run: (params, cb) => {
-                    const callback = typeof params === 'function' ? params : cb;
-                    if (callback) callback(null);
-                },
-                finalize: () => { }
-            };
-        }
-    };
-    console.log('Connected to Firebase Firestore (Serverless Mode)');
-} else if (isProd) {
+    const firebase = require('./firebase');
+    db = firebase.db;
+    db.isFirebase = true;
+    console.log('Connected to Firebase Firestore (Native Mode)');
+}
+else if (isProd) {
     const { Pool } = require('pg');
     const pool = new Pool({
         connectionString: process.env.DATABASE_URL,
