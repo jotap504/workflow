@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { Trash2, Shield, User as UserIcon, Plus, Key, Settings, Check } from 'lucide-react';
+import { Trash2, Shield, User as UserIcon, Plus, Key, Settings, Check, LayoutGrid } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 
 const UsersView = () => {
@@ -12,6 +12,8 @@ const UsersView = () => {
     const [categories, setCategories] = useState([]);
     const [selectedUserForPerms, setSelectedUserForPerms] = useState(null);
     const [userPerms, setUserPerms] = useState([]);
+    const [selectedUserForApps, setSelectedUserForApps] = useState(null);
+    const [userApps, setUserApps] = useState([]);
 
     const fetchUsers = async () => {
         try {
@@ -146,6 +148,43 @@ const UsersView = () => {
             });
             if (response.ok) setUserPerms(await response.json());
         } catch (error) { console.error(error); }
+    };
+
+    const handleOpenApps = async (user) => {
+        setSelectedUserForApps(user);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`/api/admin/users/${user.id}/apps`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) setUserApps(await response.json());
+        } catch (error) { console.error(error); }
+    };
+
+    const handleToggleApp = (appId) => {
+        setUserApps(prev =>
+            prev.includes(appId) ? prev.filter(id => id !== appId) : [...prev, appId]
+        );
+    };
+
+    const handleSaveApps = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`/api/admin/users/${selectedUserForApps.id}/apps`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ apps: userApps })
+            });
+            if (response.ok) {
+                toast.success('Acceso a aplicaciones actualizado');
+                setSelectedUserForApps(null);
+            } else {
+                toast.error('Error al guardar configuración');
+            }
+        } catch (error) { toast.error('Error de red'); }
     };
 
     const handleTogglePermission = (catId) => {
@@ -287,6 +326,13 @@ const UsersView = () => {
                                 </td>
                                 <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem' }}>
                                     <button
+                                        onClick={() => handleOpenApps(u)}
+                                        style={{ background: 'transparent', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', opacity: 0.7, padding: '5px' }}
+                                        title="Gestionar Acceso a Apps"
+                                    >
+                                        <LayoutGrid size={18} />
+                                    </button>
+                                    <button
                                         onClick={() => handleOpenPerms(u)}
                                         style={{ background: 'transparent', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', opacity: 0.7, padding: '5px' }}
                                         title="Gestionar Permisos de Categoría"
@@ -359,6 +405,60 @@ const UsersView = () => {
                                     className="glass-panel"
                                     style={{ flex: 1, background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid var(--card-border)' }}
                                     onClick={() => setSelectedUserForPerms(null)}
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+            {/* Apps Modal */}
+            <AnimatePresence>
+                {selectedUserForApps && (
+                    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20000, padding: '20px' }}>
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="glass-panel"
+                            style={{ width: '100%', maxWidth: '450px', padding: '2rem', background: 'var(--card-bg)' }}
+                        >
+                            <h4 style={{ marginBottom: '1.5rem', fontSize: '1.2rem' }}>Accesos para: <b>{selectedUserForApps.username}</b></h4>
+                            <p style={{ fontSize: '0.9rem', opacity: 0.7, marginBottom: '1.5rem' }}>Habilita qué aplicaciones de la suite puede utilizar:</p>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginBottom: '2rem' }}>
+                                {[
+                                    { id: 'workflow', name: 'Workflow', color: '#6366f1' },
+                                    { id: 'shop', name: 'Carrito Pro', color: '#ec4899' },
+                                    { id: 'crm', name: 'CRM Premium', color: '#10b981' }
+                                ].map(app => (
+                                    <div
+                                        key={app.id}
+                                        onClick={() => handleToggleApp(app.id)}
+                                        style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            padding: '0.8rem 1rem',
+                                            borderRadius: '12px',
+                                            background: userApps.includes(app.id) ? 'rgba(99, 102, 241, 0.1)' : 'rgba(255,255,255,0.03)',
+                                            border: `1px solid ${userApps.includes(app.id) ? 'var(--primary-color)' : 'var(--card-border)'}`,
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        <span>{app.name}</span>
+                                        {userApps.includes(app.id) && <Check size={18} color="var(--primary-color)" />}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                <button className="btn-primary" style={{ flex: 1 }} onClick={handleSaveApps}>Guardar</button>
+                                <button
+                                    className="glass-panel"
+                                    style={{ flex: 1, background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid var(--card-border)' }}
+                                    onClick={() => setSelectedUserForApps(null)}
                                 >
                                     Cancelar
                                 </button>

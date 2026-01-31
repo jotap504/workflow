@@ -24,6 +24,7 @@ router.post('/register', async (req, res) => {
             username,
             email,
             role: userRole,
+            authorized_apps: ['workflow'], // Default app
             created_at: new Date().toISOString()
         });
 
@@ -67,7 +68,8 @@ router.post('/login', async (req, res) => {
             user: {
                 id: uid,
                 username: userData.username,
-                role: userData.role
+                role: userData.role,
+                authorized_apps: userData.authorized_apps || []
             }
         });
     } catch (error) {

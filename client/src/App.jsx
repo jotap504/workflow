@@ -10,12 +10,12 @@ import TaskBoard from './components/TaskBoard'
 import CalendarView from './components/CalendarView'
 import PollsView from './components/PollsView'
 import ReportsView from './components/ReportsView'
-import UsersView from './components/UsersView'
+import HubView from './components/HubView'
 import ProfileView from './components/ProfileView'
 import CategoriesView from './components/CategoriesView'
 import NotificationBell from './components/NotificationBell';
 
-import { LayoutDashboard, Calendar, Vote, BarChart, Users, LogOut, Moon, Sun, User, Layers, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Calendar, Vote, BarChart, Users, LogOut, Moon, Sun, User, Layers, Menu, X, LayoutGrid } from 'lucide-react';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -47,6 +47,7 @@ const Dashboard = () => {
           <h2 style={{ fontSize: '1.1rem', fontWeight: '600', letterSpacing: '0.5px', margin: 0 }}>Workflow</h2>
 
           <nav className="desktop-nav" style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', marginLeft: '1rem' }}>
+            <NavIcon to="/hub" icon={<LayoutGrid size={18} />} label="Menu Principal" navigate={navigate} />
             <NavIcon to="/" icon={<LayoutDashboard size={18} />} label="Tablero" navigate={navigate} />
             <NavIcon to="/calendar" icon={<Calendar size={18} />} label="Calendario" navigate={navigate} />
             <NavIcon to="/polls" icon={<Vote size={18} />} label="Votaciones" navigate={navigate} />
@@ -59,6 +60,9 @@ const Dashboard = () => {
 
         {/* Mobile Nav Dropdown */}
         <div className={`mobile-nav ${mobileMenuOpen ? 'open' : ''}`}>
+          <button onClick={() => { navigate('/hub'); setMobileMenuOpen(false); }} style={{ textAlign: 'left', padding: '10px', background: 'transparent', border: 'none', color: 'inherit', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <LayoutGrid size={20} /> Menu Principal
+          </button>
           <button onClick={() => { navigate('/'); setMobileMenuOpen(false); }} style={{ textAlign: 'left', padding: '10px', background: 'transparent', border: 'none', color: 'inherit', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <LayoutDashboard size={20} /> Tablero
           </button>
@@ -205,15 +209,18 @@ function App() {
           </button>
         </div>
 
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/*" element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          } />
-        </Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/hub" element={
+          <PrivateRoute>
+            <HubView />
+          </PrivateRoute>
+        } />
+        <Route path="/*" element={
+          <PrivateRoute>
+            <Dashboard />
+          </PrivateRoute>
+        } />
       </Router>
     </AuthProvider>
   )

@@ -39,6 +39,35 @@ router.get('/users', async (req, res) => {
     });
 });
 
+// GET /api/admin/users/:id/apps - Get user's authorized apps
+router.get('/users/:id/apps', async (req, res) => {
+    const userId = req.params.id;
+    if (db.isFirebase) {
+        try {
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (!userDoc.exists) return res.status(404).json({ error: 'User not found' });
+            return res.json(userDoc.data().authorized_apps || []);
+        } catch (err) { return res.status(500).json({ error: err.message }); }
+    }
+    res.json(['workflow']); // Fallback for SQLite
+});
+
+// PUT /api/admin/users/:id/apps - Update user's authorized apps
+router.put('/users/:id/apps', async (req, res) => {
+    const userId = req.params.id;
+    const { apps } = req.body;
+
+    if (!Array.isArray(apps)) return res.status(400).json({ error: 'Apps must be an array' });
+
+    if (db.isFirebase) {
+        try {
+            await db.collection('users').doc(userId).update({ authorized_apps: apps });
+            return res.json({ message: 'Apps updated successfully' });
+        } catch (err) { return res.status(500).json({ error: err.message }); }
+    }
+    res.json({ message: 'Not implemented for SQLite' });
+});
+
 // PUT /api/admin/users/:id - Update user role
 router.put('/users/:id', async (req, res) => {
     const { role } = req.body;
