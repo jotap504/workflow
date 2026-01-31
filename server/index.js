@@ -25,6 +25,7 @@ app.use('/api/reports', require('./routes/reports'));
 app.use('/api/notes', require('./routes/notes'));
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/accounting', require('./routes/accounting'));
 
 // Static Uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

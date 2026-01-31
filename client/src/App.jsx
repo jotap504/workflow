@@ -12,6 +12,7 @@ import PollsView from './components/PollsView'
 import ReportsView from './components/ReportsView'
 import HubView from './components/HubView'
 import UsersView from './components/UsersView'
+import AccountingView from './components/AccountingView'
 import ProfileView from './components/ProfileView'
 import CategoriesView from './components/CategoriesView'
 import NotificationBell from './components/NotificationBell';
@@ -265,6 +266,11 @@ function App() {
           <Route path="/hub" element={
             <PrivateRoute>
               <HubView />
+            </PrivateRoute>
+          } />
+          <Route path="/accounting/*" element={
+            <PrivateRoute>
+              <AccountingView />
             </PrivateRoute>
           } />
           <Route path="/admin-suite/*" element={

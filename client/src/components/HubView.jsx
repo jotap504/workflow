@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, ShoppingCart, Users, Settings, Lock, ArrowRight } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Users, Settings, Lock, ArrowRight, Book } from 'lucide-react';
 
 const HubView = () => {
     const { user, logout } = useAuth();
@@ -24,6 +24,14 @@ const HubView = () => {
             icon: <ShoppingCart size={32} />,
             color: '#ec4899',
             path: '/shop'
+        },
+        {
+            id: 'accounting',
+            name: 'Contabilidad Pro',
+            description: 'Asientos contables y balances bajo norma Argentina.',
+            icon: <Book size={32} />,
+            color: '#8b5cf6',
+            path: '/accounting'
         },
         {
             id: 'crm',
