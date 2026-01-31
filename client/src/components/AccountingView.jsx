@@ -10,47 +10,75 @@ import {
     PieChart,
     Download,
     Building2,
-    FileSpreadsheet
+    FileSpreadsheet,
+    Target,
+    BarChart3,
+    TrendingUp,
+    TrendingDown,
+    Calendar
 } from 'lucide-react';
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer,
+    Cell
+} from 'recharts';
 
 const AccountingView = () => {
     const [activeTab, setActiveTab] = useState('balances');
     const [accounts, setAccounts] = useState([]);
     const [entries, setEntries] = useState([]);
     const [entities, setEntities] = useState([]);
+    const [costCenters, setCostCenters] = useState([]);
     const [balances, setBalances] = useState({ accounts: {}, entities: {} });
+    const [pnlData, setPnlData] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // Forms Toggle
     const [showAccountForm, setShowAccountForm] = useState(false);
     const [showEntityForm, setShowEntityForm] = useState(false);
     const [showEntryForm, setShowEntryForm] = useState(false);
+    const [showCostCenterForm, setShowCostCenterForm] = useState(false);
 
     // Form States
     const [newAccount, setNewAccount] = useState({ code: '', name: '', type: 'Activo', parentId: '' });
     const [newEntity, setNewEntity] = useState({ name: '', type: 'Client', cuit: '', email: '' });
+    const [newCostCenter, setNewCostCenter] = useState({ name: '', description: '' });
     const [newEntry, setNewEntry] = useState({
         date: new Date().toISOString().split('T')[0],
         description: '',
         items: [
-            { accountId: '', entityId: '', debit: 0, credit: 0 },
-            { accountId: '', entityId: '', debit: 0, credit: 0 }
+            { accountId: '', entityId: '', costCenterId: '', debit: 0, credit: 0 },
+            { accountId: '', entityId: '', costCenterId: '', debit: 0, credit: 0 }
         ]
     });
 
     const fetchData = async () => {
         try {
-            const [accRes, entRes, entryRes, balRes] = await Promise.all([
+            const [accRes, entRes, entryRes, balRes, ccRes, pnlRes] = await Promise.all([
                 fetch('/api/accounting/accounts'),
                 fetch('/api/accounting/entities'),
                 fetch('/api/accounting/entries'),
-                fetch('/api/accounting/balances')
+                fetch('/api/accounting/balances'),
+                fetch('/api/accounting/cost-centers'),
+                fetch('/api/accounting/reports/pnl?year=' + new Date().getFullYear())
             ]);
 
             if (accRes.ok) setAccounts(await accRes.json());
             if (entRes.ok) setEntities(await entRes.json());
             if (entryRes.ok) setEntries(await entryRes.json());
             if (balRes.ok) setBalances(await balRes.json());
+            if (ccRes.ok) setCostCenters(await ccRes.json());
+            if (pnlRes.ok) {
+                const data = await pnlRes.json();
+                const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                setPnlData(data.map((m, i) => ({ ...m, name: monthNames[i] })));
+            }
         } catch (error) { toast.error('Error al sincronizar datos'); }
         setLoading(false);
     };
@@ -63,10 +91,8 @@ const AccountingView = () => {
             toast.error('No hay datos para exportar');
             return;
         }
-
         const headers = Object.keys(data[0]);
         const csvRows = [headers.join(';')];
-
         for (const row of data) {
             const values = headers.map(header => {
                 const val = row[header];
@@ -74,7 +100,6 @@ const AccountingView = () => {
             });
             csvRows.push(values.join(';'));
         }
-
         const csvString = csvRows.join('\n');
         const blob = new Blob(['\ufeff' + csvString], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -91,37 +116,12 @@ const AccountingView = () => {
         const data = accounts.map(acc => {
             const bal = balances.accounts[acc.id] || { debit: 0, credit: 0, total: 0 };
             return {
-                Codigo: acc.code,
-                Nombre: acc.name,
-                Tipo: acc.type,
-                Debe: bal.debit.toFixed(2),
-                Haber: bal.credit.toFixed(2),
-                Saldo: bal.total.toFixed(2),
-                Estado: bal.total >= 0 ? 'Deudor' : 'Acreedor'
+                Codigo: acc.code, Nombre: acc.name, Tipo: acc.type,
+                Debe: bal.debit.toFixed(2), Haber: bal.credit.toFixed(2),
+                Saldo: bal.total.toFixed(2), Estado: bal.total >= 0 ? 'Deudor' : 'Acreedor'
             };
         });
         downloadCSV(data, 'Balances_Cuentas');
-    };
-
-    const exportEntries = () => {
-        const data = [];
-        entries.forEach(entry => {
-            entry.items.forEach(item => {
-                const account = accounts.find(a => a.id === item.accountId);
-                const entity = entities.find(e => e.id === item.entityId);
-                data.push({
-                    ID: entry.id,
-                    Fecha: entry.date,
-                    Concepto: entry.description,
-                    Cuenta: account?.name || '?',
-                    Codigo_Cuenta: account?.code || '?',
-                    Entidad: entity?.name || '-',
-                    Debe: parseFloat(item.debit).toFixed(2),
-                    Haber: parseFloat(item.credit).toFixed(2)
-                });
-            });
-        });
-        downloadCSV(data, 'Libro_Diario');
     };
 
     const handleCreateAccount = async (e) => {
@@ -132,11 +132,7 @@ const AccountingView = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newAccount)
             });
-            if (res.ok) {
-                toast.success('Cuenta configurada');
-                setShowAccountForm(false);
-                fetchData();
-            }
+            if (res.ok) { toast.success('Cuenta configurada'); setShowAccountForm(false); fetchData(); }
         } catch (error) { toast.error('Error de red'); }
     };
 
@@ -157,6 +153,23 @@ const AccountingView = () => {
         } catch (error) { toast.error('Error al registrar entidad'); }
     };
 
+    const handleCreateCostCenter = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await fetch('/api/accounting/cost-centers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newCostCenter)
+            });
+            if (res.ok) {
+                toast.success('Centro de Costo guardado');
+                setShowCostCenterForm(false);
+                setNewCostCenter({ name: '', description: '' });
+                fetchData();
+            }
+        } catch (error) { toast.error('Error al guardar centro de costo'); }
+    };
+
     const handleCreateEntry = async (e) => {
         e.preventDefault();
         try {
@@ -172,7 +185,7 @@ const AccountingView = () => {
                 setNewEntry({
                     date: new Date().toISOString().split('T')[0],
                     description: '',
-                    items: [{ accountId: '', entityId: '', debit: 0, credit: 0 }, { accountId: '', entityId: '', debit: 0, credit: 0 }]
+                    items: [{ accountId: '', entityId: '', costCenterId: '', debit: 0, credit: 0 }, { accountId: '', entityId: '', costCenterId: '', debit: 0, credit: 0 }]
                 });
                 fetchData();
             } else { toast.error(data.error); }
@@ -205,16 +218,18 @@ const AccountingView = () => {
                         <Building2 size={28} />
                     </div>
                     <div>
-                        <h2 style={{ margin: 0 }}>Business Finance</h2>
-                        <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>Gestión Contable y Cuentas Corrientes</span>
+                        <h2 style={{ margin: 0 }}>Financial Hub</h2>
+                        <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>Gestión Profesional y Reportes de Resultados</span>
                     </div>
                 </div>
-                <div className="glass-panel" style={{ display: 'flex', padding: '4px', borderRadius: '12px', gap: '4px' }}>
+                <div className="glass-panel" style={{ display: 'flex', padding: '4px', borderRadius: '12px', gap: '4px', overflowX: 'auto' }}>
                     {[
+                        { id: 'reports', label: 'Resultados', icon: <BarChart3 size={16} /> },
                         { id: 'balances', label: 'Saldos', icon: <PieChart size={16} /> },
-                        { id: 'entries', label: 'Libro Diario', icon: <List size={16} /> },
+                        { id: 'entries', label: 'Diario', icon: <List size={16} /> },
                         { id: 'entities', label: 'Entidades', icon: <Users size={16} /> },
-                        { id: 'accounts', label: 'Plan de Cuentas', icon: <Book size={16} /> }
+                        { id: 'centers', label: 'Centros', icon: <Target size={16} /> },
+                        { id: 'accounts', label: 'Plan', icon: <Book size={16} /> }
                     ].map(tab => (
                         <button
                             key={tab.id}
@@ -224,7 +239,7 @@ const AccountingView = () => {
                                 padding: '8px 16px', borderRadius: '10px', border: 'none',
                                 background: activeTab === tab.id ? 'var(--primary-color)' : 'transparent',
                                 color: activeTab === tab.id ? 'white' : 'inherit', cursor: 'pointer',
-                                transition: 'all 0.2s'
+                                transition: 'all 0.2s', whiteSpace: 'nowrap'
                             }}
                         >
                             {tab.icon} {tab.label}
@@ -233,14 +248,64 @@ const AccountingView = () => {
                 </div>
             </div>
 
+            {/* TAB: REPORTS (P&L) */}
+            {activeTab === 'reports' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+                        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '4px solid #10b981' }}>
+                            <div style={{ background: '#10b98122', padding: '10px', borderRadius: '12px', color: '#10b981' }}><TrendingUp /></div>
+                            <div>
+                                <h4 style={{ margin: 0, opacity: 0.6, fontSize: '0.8rem' }}>Ingresos Totales</h4>
+                                <h2 style={{ margin: 0 }}>$ {pnlData.reduce((s, m) => s + m.income, 0).toLocaleString()}</h2>
+                            </div>
+                        </div>
+                        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '4px solid #ef4444' }}>
+                            <div style={{ background: '#ef444422', padding: '10px', borderRadius: '12px', color: '#ef4444' }}><TrendingDown /></div>
+                            <div>
+                                <h4 style={{ margin: 0, opacity: 0.6, fontSize: '0.8rem' }}>Egresos Totales</h4>
+                                <h2 style={{ margin: 0 }}>$ {pnlData.reduce((s, m) => s + m.expense, 0).toLocaleString()}</h2>
+                            </div>
+                        </div>
+                        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '4px solid var(--primary-color)' }}>
+                            <div style={{ background: 'var(--primary-color)22', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><PieChart /></div>
+                            <div>
+                                <h4 style={{ margin: 0, opacity: 0.6, fontSize: '0.8rem' }}>Resultado Neto</h4>
+                                <h2 style={{ margin: 0 }}>$ {pnlData.reduce((s, m) => s + m.profit, 0).toLocaleString()}</h2>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="glass-panel" style={{ padding: '2rem', height: '400px' }}>
+                        <h3 style={{ marginTop: 0, marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <Calendar size={20} /> Evolución Mensual de Resultados
+                        </h3>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={pnlData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} />
+                                <Tooltip
+                                    contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.5)' }}
+                                    itemStyle={{ fontSize: '12px' }}
+                                />
+                                <Legend verticalAlign="top" height={36} />
+                                <Bar dataKey="income" name="Ingresos" fill="#10b981" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="expense" name="Egresos" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="profit" name="Ganancia Neta" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            )}
+
             {/* TAB: BALANCES */}
             {activeTab === 'balances' && (
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
                     <div className="glass-panel" style={{ padding: '2rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                            <h3 style={{ margin: 0 }}>Saldos de Cuentas</h3>
+                            <h3 style={{ margin: 0 }}>Estado de Cuentas</h3>
                             <button onClick={exportBalances} className="glass-panel" style={{ padding: '8px 15px', display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid #10b98133', color: '#10b981', cursor: 'pointer' }}>
-                                <FileSpreadsheet size={18} /> Exportar Excel
+                                <FileSpreadsheet size={18} /> Planilla Excel
                             </button>
                         </div>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -271,7 +336,7 @@ const AccountingView = () => {
                         </table>
                     </div>
                     <div className="glass-panel" style={{ padding: '2rem' }}>
-                        <h3 style={{ marginTop: 0 }}>Sumas Corrientes</h3>
+                        <h3 style={{ marginTop: 0 }}>Cuentas Corrientes</h3>
                         {entities.map(ent => {
                             const bal = balances.entities[ent.id] || { total: 0 };
                             return (
@@ -290,53 +355,37 @@ const AccountingView = () => {
                 </div>
             )}
 
-            {/* TAB: ENTITIES */}
-            {activeTab === 'entities' && (
+            {/* TAB: CENTERS */}
+            {activeTab === 'centers' && (
                 <div className="glass-panel" style={{ padding: '2rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                        <h3 style={{ margin: 0 }}>Cuentas Corrientes (Entidades)</h3>
-                        <button onClick={() => setShowEntityForm(!showEntityForm)} className="btn-primary" style={{ padding: '10px 20px' }}>+ Nueva Entidad</button>
+                        <h3 style={{ margin: 0 }}>Centros de Costo e Inversión</h3>
+                        <button onClick={() => setShowCostCenterForm(!showCostCenterForm)} className="btn-primary">+ Nuevo Centro</button>
                     </div>
 
                     <AnimatePresence>
-                        {showEntityForm && (
-                            <motion.form initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} onSubmit={handleCreateEntity}
-                                style={{ marginBottom: '2rem', padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid var(--card-border)' }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-                                    <input type="text" placeholder="Nombre / Razón Social" value={newEntity.name} onChange={e => setNewEntity({ ...newEntity, name: e.target.value })} required className="glass-panel" style={{ padding: '10px', background: 'transparent', color: 'inherit' }} />
-                                    <select value={newEntity.type} onChange={e => setNewEntity({ ...newEntity, type: e.target.value })} className="glass-panel" style={{ padding: '10px', background: 'var(--card-bg)', color: 'inherit' }}>
-                                        <option value="Client">Cliente</option>
-                                        <option value="Supplier">Proveedor</option>
-                                    </select>
-                                    <input type="text" placeholder="CUIT / CUIL" value={newEntity.cuit} onChange={e => setNewEntity({ ...newEntity, cuit: e.target.value })} className="glass-panel" style={{ padding: '10px', background: 'transparent', color: 'inherit' }} />
-                                    <button type="submit" className="btn-primary">Guardar Entidad</button>
+                        {showCostCenterForm && (
+                            <motion.form initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} onSubmit={handleCreateCostCenter} style={{ overflow: 'hidden', paddingBottom: '2rem' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: '1rem' }}>
+                                    <input type="text" placeholder="Nombre (Ej: Sucursal Centro)" value={newCostCenter.name} onChange={e => setNewCostCenter({ ...newCostCenter, name: e.target.value })} required className="glass-panel" style={{ padding: '10px', color: 'inherit', background: 'transparent' }} />
+                                    <input type="text" placeholder="Descripción corta" value={newCostCenter.description} onChange={e => setNewCostCenter({ ...newCostCenter, description: e.target.value })} className="glass-panel" style={{ padding: '10px', color: 'inherit', background: 'transparent' }} />
+                                    <button type="submit" className="btn-primary">Registrar</button>
                                 </div>
                             </motion.form>
                         )}
                     </AnimatePresence>
 
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                            <tr style={{ borderBottom: '1px solid var(--card-border)', opacity: 0.6 }}>
-                                <th style={{ padding: '1rem', textAlign: 'left' }}>Nombre</th>
-                                <th style={{ padding: '1rem', textAlign: 'left' }}>Tipo</th>
-                                <th style={{ padding: '1rem', textAlign: 'left' }}>Identificación</th>
-                                <th style={{ padding: '1rem', textAlign: 'right' }}>Saldo Pendiente</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {entities.map(ent => (
-                                <tr key={ent.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <td style={{ padding: '1rem', fontWeight: '500' }}>{ent.name}</td>
-                                    <td style={{ padding: '1rem' }}>{ent.type === 'Client' ? 'Cliente' : 'Proveedor'}</td>
-                                    <td style={{ padding: '1rem' }}>{ent.cuit || '-'}</td>
-                                    <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold', color: (balances.entities[ent.id]?.total || 0) > 0 ? '#10b981' : ((balances.entities[ent.id]?.total || 0) < 0 ? '#ef4444' : 'inherit') }}>
-                                        $ {Math.abs(balances.entities[ent.id]?.total || 0).toFixed(2)}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem' }}>
+                        {costCenters.map(cc => (
+                            <div key={cc.id} className="glass-panel" style={{ padding: '1.5rem', border: '1px solid var(--card-border)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
+                                    <Target size={18} color="var(--primary-color)" />
+                                    <h4 style={{ margin: 0 }}>{cc.name}</h4>
+                                </div>
+                                <p style={{ fontSize: '0.8rem', opacity: 0.6, margin: 0 }}>{cc.description || 'Sin descripción'}</p>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
 
@@ -346,7 +395,7 @@ const AccountingView = () => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                             <h3 style={{ margin: 0 }}>Libro Diario</h3>
-                            <button onClick={exportEntries} className="glass-panel" style={{ padding: '5px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px', color: '#10b981', cursor: 'pointer' }}>
+                            <button onClick={() => downloadCSV(entries, 'Full_Journal_Log')} className="glass-panel" style={{ padding: '5px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px', color: '#10b981', cursor: 'pointer' }}>
                                 <Download size={14} /> Backup CSV
                             </button>
                         </div>
@@ -355,15 +404,14 @@ const AccountingView = () => {
 
                     <AnimatePresence>
                         {showEntryForm && (
-                            <motion.form initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} onSubmit={handleCreateEntry}
-                                style={{ overflow: 'hidden', paddingBottom: '2rem' }}>
+                            <motion.form initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} onSubmit={handleCreateEntry} style={{ overflow: 'hidden', paddingBottom: '2rem' }}>
                                 <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
                                     <input type="date" value={newEntry.date} onChange={e => setNewEntry({ ...newEntry, date: e.target.value })} className="glass-panel" style={{ padding: '10px', color: 'inherit', background: 'transparent' }} />
                                     <input type="text" placeholder="Concepto del movimiento..." value={newEntry.description} onChange={e => setNewEntry({ ...newEntry, description: e.target.value })} className="glass-panel" style={{ flex: 1, padding: '10px', color: 'inherit', background: 'transparent' }} />
                                 </div>
 
                                 {newEntry.items.map((item, idx) => (
-                                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
                                         <select value={item.accountId} onChange={e => updateEntryItem(idx, 'accountId', e.target.value)} required className="glass-panel" style={{ padding: '10px', background: 'var(--card-bg)', color: 'inherit' }}>
                                             <option value="">Seleccionar cuenta...</option>
                                             {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.code} - {acc.name}</option>)}
@@ -371,6 +419,10 @@ const AccountingView = () => {
                                         <select value={item.entityId} onChange={e => updateEntryItem(idx, 'entityId', e.target.value)} className="glass-panel" style={{ padding: '10px', background: 'var(--card-bg)', color: 'inherit' }}>
                                             <option value="">(Sin Entidad)</option>
                                             {entities.map(ent => <option key={ent.id} value={ent.id}>{ent.name}</option>)}
+                                        </select>
+                                        <select value={item.costCenterId} onChange={e => updateEntryItem(idx, 'costCenterId', e.target.value)} className="glass-panel" style={{ padding: '10px', background: 'var(--card-bg)', color: 'inherit' }}>
+                                            <option value="">(Sin Centro)</option>
+                                            {costCenters.map(cc => <option key={cc.id} value={cc.id}>{cc.name}</option>)}
                                         </select>
                                         <input type="number" step="0.01" placeholder="Debe" value={item.debit} onChange={e => updateEntryItem(idx, 'debit', e.target.value)} className="glass-panel" style={{ padding: '10px', background: 'transparent', textAlign: 'right', color: 'inherit' }} />
                                         <input type="number" step="0.01" placeholder="Haber" value={item.credit} onChange={e => updateEntryItem(idx, 'credit', e.target.value)} className="glass-panel" style={{ padding: '10px', background: 'transparent', textAlign: 'right', color: 'inherit' }} />
@@ -398,8 +450,11 @@ const AccountingView = () => {
                                 {entry.items.map((item, idx) => (
                                     <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', opacity: 0.8 }}>
                                         <span style={{ flex: 1 }}>{accounts.find(a => a.id === item.accountId)?.name}
-                                            {item.entityId && <span style={{ marginLeft: '10px', padding: '2px 8px', borderRadius: '4px', background: 'rgba(100,100,100,0.2)', fontSize: '0.75rem' }}>
+                                            {item.entityId && <span style={{ marginLeft: '10px', padding: '2px 8px', borderRadius: '4px', background: 'rgba(50,50,50,0.4)', fontSize: '0.75rem' }}>
                                                 {entities.find(e => e.id === item.entityId)?.name}
+                                            </span>}
+                                            {item.costCenterId && <span style={{ marginLeft: '5px', padding: '2px 8px', borderRadius: '4px', background: 'rgba(100,50,50,0.2)', color: 'var(--primary-color)', fontSize: '0.75rem' }}>
+                                                {costCenters.find(c => c.id === item.costCenterId)?.name}
                                             </span>}
                                         </span>
                                         <div style={{ width: '200px', display: 'flex', textAlign: 'right' }}>
@@ -414,21 +469,20 @@ const AccountingView = () => {
                 </div>
             )}
 
-            {/* TAB: ACCOUNTS (Plan de Cuentas) */}
+            {/* TAB: ACCOUNTS */}
             {activeTab === 'accounts' && (
                 <div className="glass-panel" style={{ padding: '2rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                        <h3 style={{ margin: 0 }}>Plan Masivo de Cuentas</h3>
+                        <h3 style={{ margin: 0 }}>Plan de Cuentas Maestro</h3>
                         <div style={{ display: 'flex', gap: '1rem' }}>
-                            <button onClick={() => downloadCSV(accounts, 'Plan_Maestro_Cuentas')} className="glass-panel" style={{ padding: '8px 15px', color: '#6366f1', cursor: 'pointer' }}>Exportar Plan</button>
+                            <button onClick={() => downloadCSV(accounts, 'Chart_of_Accounts')} className="glass-panel" style={{ padding: '8px 15px', color: '#6366f1', cursor: 'pointer' }}>Exportar Plan</button>
                             <button onClick={() => setShowAccountForm(!showAccountForm)} className="btn-primary">+ Nueva Cuenta</button>
                         </div>
                     </div>
 
                     <AnimatePresence>
                         {showAccountForm && (
-                            <motion.form initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} onSubmit={handleCreateAccount}
-                                style={{ overflow: 'hidden', paddingBottom: '2rem' }}>
+                            <motion.form initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} onSubmit={handleCreateAccount} style={{ overflow: 'hidden', paddingBottom: '2rem' }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr 1fr', gap: '1rem' }}>
                                     <input type="text" placeholder="Código" value={newAccount.code} onChange={e => setNewAccount({ ...newAccount, code: e.target.value })} required className="glass-panel" style={{ padding: '10px', background: 'transparent', color: 'inherit' }} />
                                     <input type="text" placeholder="Nombre completo" value={newAccount.name} onChange={e => setNewAccount({ ...newAccount, name: e.target.value })} required className="glass-panel" style={{ padding: '10px', background: 'transparent', color: 'inherit' }} />

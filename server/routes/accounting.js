@@ -61,6 +61,36 @@ router.post('/entities', async (req, res) => {
     }
 });
 
+// --- COST CENTERS ---
+
+// Get Cost Centers
+router.get('/cost-centers', async (req, res) => {
+    try {
+        const snapshot = await db.collection('accounting_cost_centers').orderBy('name').get();
+        const centers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        res.json(centers);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Create/Update Cost Center
+router.post('/cost-centers', async (req, res) => {
+    const { id, name, description } = req.body;
+    try {
+        const data = { name, description, updated_at: new Date().toISOString() };
+        if (id) {
+            await db.collection('accounting_cost_centers').doc(id).update(data);
+        } else {
+            data.created_at = new Date().toISOString();
+            await db.collection('accounting_cost_centers').add(data);
+        }
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // --- JOURNAL ENTRIES (ASIENTOS) ---
 
 // Get Entries
@@ -76,7 +106,7 @@ router.get('/entries', async (req, res) => {
 
 // Create Entry
 router.post('/entries', async (req, res) => {
-    const { date, description, items } = req.body; // items: [{accountId, entityId, debit, credit}]
+    const { date, description, items } = req.body; // items: [{accountId, entityId, costCenterId, debit, credit}]
 
     // Validation: Double Entry
     const totalDebit = items.reduce((sum, item) => sum + (parseFloat(item.debit) || 0), 0);
@@ -133,6 +163,53 @@ router.get('/balances', async (req, res) => {
         });
 
         res.json({ accounts: balances, entities: entityBalances });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// --- PROFIT & LOSS (P&L) REPORT ---
+
+router.get('/reports/pnl', async (req, res) => {
+    try {
+        const { year } = req.query;
+        const entriesSnapshot = await db.collection('accounting_entries').get();
+        const accountsSnapshot = await db.collection('accounting_accounts').get();
+
+        const accountsMap = {};
+        accountsSnapshot.docs.forEach(doc => accountsMap[doc.id] = doc.data());
+
+        const months = Array(12).fill(0).map(() => ({ income: 0, expense: 0, profit: 0 }));
+
+        entriesSnapshot.docs.forEach(doc => {
+            const entry = doc.data();
+            const entryDate = new Date(entry.date);
+
+            // Filter by year if provided
+            if (year && entryDate.getFullYear() !== parseInt(year)) return;
+
+            const monthIndex = entryDate.getMonth();
+
+            entry.items.forEach(item => {
+                const account = accountsMap[item.accountId];
+                if (!account) return;
+
+                const amount = (parseFloat(item.debit) || 0) - (parseFloat(item.credit) || 0);
+
+                if (account.type === 'Ingreso') {
+                    // Revenue is normally credit-balanced, but in our double entry we track debit-credit
+                    // So for Income: Credit > Debit means positive income.
+                    months[monthIndex].income -= amount;
+                } else if (account.type === 'Egreso') {
+                    // Expense is normally debit-balanced.
+                    months[monthIndex].expense += amount;
+                }
+            });
+        });
+
+        months.forEach(m => m.profit = m.income - m.expense);
+
+        res.json(months);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
