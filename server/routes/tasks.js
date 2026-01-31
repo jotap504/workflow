@@ -116,13 +116,13 @@ router.post('/', upload.single('attachment'), async (req, res) => {
 
     if (db.isFirebase) {
         try {
-            // Check permissions
+            // Check permissions - Refactored to fetch all and filter in memory (no composite index needed)
             if (req.userRole !== 'admin' && category_id) {
-                const perm = await db.collection('user_category_permissions')
+                const permsSnap = await db.collection('user_category_permissions')
                     .where('user_id', '==', req.userId)
-                    .where('category_id', '==', category_id)
                     .get();
-                if (perm.empty) return res.status(403).json({ error: 'No tienes permiso para esta categoría' });
+                const allowed = permsSnap.docs.some(doc => doc.data().category_id === category_id);
+                if (!allowed) return res.status(403).json({ error: 'No tienes permiso para esta categoría' });
             }
 
             const isParent = recurrence && recurrence !== 'none' ? 1 : 0;
@@ -145,7 +145,9 @@ router.post('/', upload.single('attachment'), async (req, res) => {
                 limitDate.setFullYear(limitDate.getFullYear() + 2);
 
                 let currentDate = new Date(startDate);
-                while (true) {
+                let safetyCounter = 0; // Prevent infinite loops
+                while (safetyCounter < 750) { // Approx 2 years daily
+                    safetyCounter++;
                     if (recurrence === 'daily') currentDate.setDate(currentDate.getDate() + 1);
                     else if (recurrence === 'weekly') currentDate.setDate(currentDate.getDate() + 7);
                     else if (recurrence === 'monthly') currentDate.setMonth(currentDate.getMonth() + 1);
@@ -166,9 +168,11 @@ router.post('/', upload.single('attachment'), async (req, res) => {
             req.app.get('io').emit('new_task', { title, creator: req.userName || 'Usuario' });
             return res.json({ id: parentId, message: 'Task created successfully', attachment_url });
         } catch (err) {
+            console.error('[TASK CREATE ERROR]', err);
             return res.status(500).json({ error: err.message });
         }
-    } else {
+    }
+    else {
         // Phase 17: Security Check - Verify category permissions for non-admins
         if (req.userRole !== 'admin' && category_id) {
             const checkSql = 'SELECT 1 FROM user_category_permissions WHERE user_id = ? AND category_id = ?';

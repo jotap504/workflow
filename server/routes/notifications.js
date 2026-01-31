@@ -136,14 +136,12 @@ router.post('/read', async (req, res) => {
         if (!taskId) return res.status(400).json({ error: 'taskId required' });
 
         if (db.isFirebase) {
-            // Check if already exists to avoid duplicates
-            const existing = await db.collection('task_notifications_read')
-                .where('user_id', '==', req.userId)
-                .where('task_id', '==', taskId)
-                .get();
+            // Use Predictable Document ID (no query = no composite index needed)
+            const readRef = db.collection('task_notifications_read').doc(`${req.userId}_${taskId}`);
+            const readDoc = await readRef.get();
 
-            if (existing.empty) {
-                await db.collection('task_notifications_read').add({
+            if (!readDoc.exists) {
+                await readRef.set({
                     user_id: req.userId,
                     task_id: taskId,
                     read_at: new Date().toISOString()
@@ -158,6 +156,7 @@ router.post('/read', async (req, res) => {
             res.json({ message: 'Marked as read' });
         });
     } catch (error) {
+        console.error('[NOTIF READ ERROR]', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });

@@ -15,24 +15,26 @@ router.get('/', async (req, res) => {
             const polls = pollsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
             const pollsWithData = await Promise.all(polls.map(async p => {
-                const [optionsSnap, votesSnap, userVoteSnap] = await Promise.all([
+                const [optionsSnap, votesSnap] = await Promise.all([
                     db.collection('poll_options').where('poll_id', '==', p.id).get(),
-                    db.collection('poll_votes').where('poll_id', '==', p.id).get(),
-                    db.collection('poll_votes').where('poll_id', '==', p.id).where('user_id', '==', userId).get()
+                    db.collection('poll_votes').where('poll_id', '==', p.id).get()
                 ]);
+
+                const votes = votesSnap.docs.map(doc => doc.data());
+                const userVote = votes.find(v => v.user_id === userId);
 
                 const options = optionsSnap.docs.map(doc => {
                     const optData = doc.data();
                     return {
                         id: doc.id,
                         ...optData,
-                        vote_count: votesSnap.docs.filter(v => v.data().option_id === doc.id).length
+                        vote_count: votes.filter(v => v.option_id === doc.id).length
                     };
                 });
 
                 return {
                     ...p,
-                    user_has_voted: !userVoteSnap.empty,
+                    user_has_voted: !!userVote,
                     options,
                     total_votes: votesSnap.size
                 };
@@ -40,6 +42,7 @@ router.get('/', async (req, res) => {
 
             return res.json(pollsWithData);
         } catch (err) {
+            console.error('[POLLS GET ERROR]', err);
             return res.status(500).json({ error: err.message });
         }
     }
@@ -158,14 +161,13 @@ router.post('/:id/vote', async (req, res) => {
             if (!pollDoc.exists) return res.status(404).json({ error: 'Poll not found' });
             if (pollDoc.data().status !== 'open') return res.status(400).json({ error: 'Poll is closed' });
 
-            const existingVote = await db.collection('poll_votes')
-                .where('poll_id', '==', pollId)
-                .where('user_id', '==', userId)
-                .get();
+            // Use Predictable Document ID to check for existing vote (no query = no composite index)
+            const voteRef = db.collection('poll_votes').doc(`${userId}_${pollId}`);
+            const voteDoc = await voteRef.get();
 
-            if (!existingVote.empty) return res.status(400).json({ error: 'You have already voted on this poll.' });
+            if (voteDoc.exists) return res.status(400).json({ error: 'You have already voted on this poll.' });
 
-            await db.collection('poll_votes').add({
+            await voteRef.set({
                 poll_id: pollId,
                 option_id: option_id,
                 user_id: userId,
@@ -174,6 +176,7 @@ router.post('/:id/vote', async (req, res) => {
 
             return res.json({ message: 'Vote recorded' });
         } catch (err) {
+            console.error('[POLL VOTE ERROR]', err);
             return res.status(500).json({ error: err.message });
         }
     }
