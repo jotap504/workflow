@@ -13,7 +13,7 @@ const PollsView = () => {
     const fetchPolls = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:3000/api/polls', {
+            const response = await fetch('/api/polls', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -38,7 +38,7 @@ const PollsView = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:3000/api/polls', {
+            const response = await fetch('/api/polls', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -61,7 +61,7 @@ const PollsView = () => {
     const handleVote = async (pollId, optionId) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:3000/api/polls/${pollId}/vote`, {
+            const response = await fetch(`/api/polls/${pollId}/vote`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -86,7 +86,7 @@ const PollsView = () => {
         if (!confirm('¿Cerrar esta votación? Nadie más podrá votar.')) return;
         try {
             const token = localStorage.getItem('token');
-            await fetch(`http://localhost:3000/api/polls/${pollId}/close`, {
+            await fetch(`/api/polls/${pollId}/close`, {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

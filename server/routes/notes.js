@@ -11,23 +11,28 @@ router.get('/:taskId', async (req, res) => {
 
     if (db.isFirebase) {
         try {
+            // Refactored to avoid composite index: fetch by task_id and sort in memory
             const snapshot = await db.collection('task_notes')
                 .where('task_id', '==', taskId)
-                .orderBy('created_at', 'asc')
                 .get();
 
-            const notes = await Promise.all(snapshot.docs.map(async doc => {
+            let notes = await Promise.all(snapshot.docs.map(async doc => {
                 const data = doc.data();
                 // Fetch author name from users collection
-                const userDoc = await db.collection('users').doc(data.user_id).get();
+                const userDoc = data.user_id ? await db.collection('users').doc(data.user_id).get() : null;
                 return {
                     id: doc.id,
                     ...data,
-                    author_name: userDoc.exists ? userDoc.data().username : 'Desconocido'
+                    author_name: userDoc && userDoc.exists ? userDoc.data().username : 'Desconocido'
                 };
             }));
+
+            // Sort in memory by created_at asc
+            notes.sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+
             return res.json(notes);
         } catch (err) {
+            console.error('[NOTES GET ERROR]', err);
             return res.status(500).json({ error: err.message });
         }
     }
@@ -65,6 +70,7 @@ router.post('/:taskId', async (req, res) => {
             req.app.get('io').emit('notes_updated', { taskId });
             return res.json({ id: docRef.id, message: 'Note added successfully' });
         } catch (err) {
+            console.error('[NOTE CREATE ERROR]', err);
             return res.status(500).json({ error: err.message });
         }
     }

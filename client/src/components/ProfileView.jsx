@@ -22,7 +22,7 @@ const ProfileView = () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:3000/api/auth/profile/password', {
+            const response = await fetch('/api/auth/profile/password', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

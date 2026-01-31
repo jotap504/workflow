@@ -16,7 +16,7 @@ const UsersView = () => {
     const fetchUsers = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:3000/api/admin/users', {
+            const response = await fetch('/api/admin/users', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -35,7 +35,7 @@ const UsersView = () => {
     const handleCreateUser = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:3000/api/auth/register', {
+            const response = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newUser)
@@ -58,7 +58,7 @@ const UsersView = () => {
     const handleUpdateRole = async (userId, newRole) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:3000/api/admin/users/${userId}`, {
+            const response = await fetch(`/api/admin/users/${userId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -84,7 +84,7 @@ const UsersView = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:3000/api/admin/users/${userId}`, {
+            const response = await fetch(`/api/admin/users/${userId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -107,7 +107,7 @@ const UsersView = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:3000/api/admin/users/${userId}/reset-password`, {
+            const response = await fetch(`/api/admin/users/${userId}/reset-password`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -130,7 +130,7 @@ const UsersView = () => {
     const fetchCategories = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:3000/api/categories', {
+            const response = await fetch('/api/categories', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) setCategories(await response.json());
@@ -141,7 +141,7 @@ const UsersView = () => {
         setSelectedUserForPerms(user);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:3000/api/admin/users/${user.id}/categories`, {
+            const response = await fetch(`/api/admin/users/${user.id}/categories`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) setUserPerms(await response.json());
@@ -157,7 +157,7 @@ const UsersView = () => {
     const handleSavePermissions = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:3000/api/admin/users/${selectedUserForPerms.id}/categories`, {
+            const response = await fetch(`/api/admin/users/${selectedUserForPerms.id}/categories`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

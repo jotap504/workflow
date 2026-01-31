@@ -9,7 +9,7 @@ const ReportsView = () => {
         const fetchReports = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:3000/api/reports', {
+                const response = await fetch('/api/reports', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
