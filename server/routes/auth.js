@@ -69,7 +69,7 @@ router.post('/login', async (req, res) => {
                 id: uid,
                 username: userData.username,
                 role: userData.role,
-                authorized_apps: userData.authorized_apps || []
+                authorized_apps: userData.authorized_apps || ['workflow']
             }
         });
     } catch (error) {

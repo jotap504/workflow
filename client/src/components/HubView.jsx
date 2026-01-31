@@ -46,8 +46,13 @@ const HubView = () => {
     ];
 
     const isAuthorized = (app) => {
-        if (app.adminOnly && user?.role !== 'admin') return false;
         if (app.locked) return false;
+        if (app.id === 'admin') return user?.role === 'admin';
+
+        // Admins have access to everything by default
+        if (user?.role === 'admin') return true;
+
+        // For standard users, check their specific authorization
         return user?.authorized_apps?.includes(app.id);
     };
 
