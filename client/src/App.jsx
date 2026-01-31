@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom'
 import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from './context/AuthContext'
 import PrivateRoute from './components/PrivateRoute'
@@ -183,6 +183,10 @@ const AdminSuite = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+  if (!user || user.role !== 'admin') {
+    return <Navigate to="/hub" />;
+  }
+
   return (
     <div className="container">
       <header className="glass-panel" style={{
@@ -261,7 +265,7 @@ function App() {
           } />
           <Route path="/admin-suite/*" element={
             <PrivateRoute>
-              {user?.role === 'admin' ? <AdminSuite /> : <HubView />}
+              <AdminSuite />
             </PrivateRoute>
           } />
           <Route path="/*" element={
