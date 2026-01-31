@@ -34,13 +34,12 @@ const HubView = () => {
             path: '/accounting'
         },
         {
-            id: 'crm',
-            name: 'CRM Premium',
-            description: 'Gestión inteligente de contactos y prospectos.',
+            id: 'clients',
+            name: 'Contactos Pro',
+            description: 'Base de datos global de clientes y proveedores.',
             icon: <Users size={32} />,
             color: '#10b981',
-            path: '/crm',
-            locked: true
+            path: '/clients'
         },
         {
             id: 'admin',

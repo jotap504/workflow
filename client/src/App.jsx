@@ -15,6 +15,7 @@ import UsersView from './components/UsersView'
 import AccountingView from './components/AccountingView'
 import ProfileView from './components/ProfileView'
 import CategoriesView from './components/CategoriesView'
+import ClientsView from './components/ClientsView'
 import NotificationBell from './components/NotificationBell';
 
 import { LayoutDashboard, Calendar, Vote, BarChart, Users, LogOut, Moon, Sun, User, Layers, Menu, X, LayoutGrid } from 'lucide-react';
@@ -271,6 +272,11 @@ function App() {
           <Route path="/accounting/*" element={
             <PrivateRoute>
               <AccountingView />
+            </PrivateRoute>
+          } />
+          <Route path="/clients" element={
+            <PrivateRoute>
+              <ClientsView />
             </PrivateRoute>
           } />
           <Route path="/admin-suite/*" element={
