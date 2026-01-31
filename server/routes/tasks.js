@@ -12,6 +12,7 @@ router.get('/', async (req, res) => {
     if (db.isFirebase) {
         try {
             // 1. Get all tasks
+            const showAll = req.query.all === 'true';
             let snapshot = await db.collection('tasks').orderBy('created_at', 'desc').get();
             let tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
@@ -42,8 +43,9 @@ router.get('/', async (req, res) => {
             }));
 
             // 4. Apply Recurring Logic (mimic SQL)
-            // Show only one pending task per series (parent_id)
+            // Show only one pending task per series (parent_id) unless showAll is true
             const finalizedTasks = enrichedTasks.filter(t => {
+                if (showAll) return true;
                 if (t.recurrence === 'none') return true;
                 const seriesId = t.parent_id || t.id;
                 const series = enrichedTasks.filter(st => (st.parent_id || st.id) === seriesId && st.status !== 'done');

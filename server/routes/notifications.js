@@ -33,7 +33,7 @@ router.get('/', async (req, res) => {
                 tasks = tasks.filter(t => !t.category_id || allowedCategories.includes(t.category_id));
             }
 
-            // 6. Apply Recurring Logic (mimic SQL: only earliest pending per series)
+            // 6. Apply Recurring Logic (Show only the NEXT occurrence per series)
             tasks = tasks.filter(t => {
                 if (t.recurrence === 'none' || !t.recurrence) return true;
                 const seriesId = t.parent_id || t.id;
@@ -43,20 +43,26 @@ router.get('/', async (req, res) => {
             });
 
             // 7. Enriched with creator name and notif_type
+            const todayStr = new Date().toISOString().split('T')[0];
             const enriched = await Promise.all(tasks.map(async t => {
                 const userDoc = t.created_by ? await db.collection('users').doc(t.created_by).get() : null;
+                const isDueToday = t.due_date && t.due_date.startsWith(todayStr);
+                const isOverdue = t.due_date && t.due_date < new Date().toISOString() && !isDueToday;
+
                 return {
                     ...t,
                     creator_name: userDoc && userDoc.exists ? userDoc.data().username : 'Desconocido',
-                    notif_type: t.urgency === 'high' ? 'urgent' : 'new'
+                    notif_type: (t.urgency === 'high' || isDueToday || isOverdue) ? 'urgent' : 'new'
                 };
             }));
 
-            // Sort: Urgent first, then by date
+            // Sort: Urgent/Due Today first, then by date
             enriched.sort((a, b) => {
-                if (a.urgency === 'high' && b.urgency !== 'high') return -1;
-                if (a.urgency !== 'high' && b.urgency === 'high') return 1;
-                return (b.created_at || '').localeCompare(a.created_at || '');
+                const aUrgent = a.notif_type === 'urgent';
+                const bUrgent = b.notif_type === 'urgent';
+                if (aUrgent && !bUrgent) return -1;
+                if (!aUrgent && bUrgent) return 1;
+                return (a.due_date || '').localeCompare(b.due_date || '');
             });
 
             return res.json(enriched);

@@ -8,7 +8,7 @@ const CalendarView = () => {
         const fetchTasks = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/tasks', {
+                const response = await fetch('/api/tasks?all=true', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) setTasks(await response.json());
