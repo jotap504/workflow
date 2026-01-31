@@ -209,18 +209,20 @@ function App() {
           </button>
         </div>
 
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/hub" element={
-          <PrivateRoute>
-            <HubView />
-          </PrivateRoute>
-        } />
-        <Route path="/*" element={
-          <PrivateRoute>
-            <Dashboard />
-          </PrivateRoute>
-        } />
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/hub" element={
+            <PrivateRoute>
+              <HubView />
+            </PrivateRoute>
+          } />
+          <Route path="/*" element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          } />
+        </Routes>
       </Router>
     </AuthProvider>
   )
