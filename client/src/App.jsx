@@ -54,6 +54,8 @@ const Dashboard = () => {
             <NavIcon to="/polls" icon={<Vote size={18} />} label="Votaciones" navigate={navigate} />
             <NavIcon to="/reports" icon={<BarChart size={18} />} label="Reportes" navigate={navigate} />
             <NavIcon to="/profile" icon={<User size={18} />} label="Perfil" navigate={navigate} />
+            {(user?.role === 'admin' || user?.role === 'manager') && <NavIcon to="/categories" icon={<Layers size={18} />} label="Categorías" navigate={navigate} />}
+            {(user?.role === 'admin' || user?.role === 'manager') && <NavIcon to="/users" icon={<Users size={18} />} label="Usuarios" navigate={navigate} />}
           </nav>
         </div>
 
@@ -79,7 +81,7 @@ const Dashboard = () => {
               <Layers size={20} /> Categorías
             </button>
           )}
-          {user?.role === 'admin' && (
+          {(user?.role === 'admin' || user?.role === 'manager') && (
             <button onClick={() => { navigate('/users'); setMobileMenuOpen(false); }} style={{ textAlign: 'left', padding: '10px', background: 'transparent', border: 'none', color: 'inherit', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Users size={20} /> Usuarios
             </button>
@@ -147,6 +149,8 @@ const Dashboard = () => {
           <Route path="/polls" element={<PollsView />} />
           <Route path="/reports" element={<ReportsView />} />
           <Route path="/profile" element={<ProfileView />} />
+          <Route path="/users" element={<UsersView globalMode={false} />} />
+          <Route path="/categories" element={<CategoriesView />} />
         </Routes>
       </main>
     </div>
@@ -219,7 +223,7 @@ const AdminSuite = () => {
       </header>
       <main>
         <Routes>
-          <Route path="/" element={<UsersView />} />
+          <Route path="/" element={<UsersView globalMode={true} />} />
           <Route path="/categories" element={<CategoriesView />} />
         </Routes>
       </main>

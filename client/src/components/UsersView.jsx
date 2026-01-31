@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Trash2, Shield, User as UserIcon, Plus, Key, Settings, Check, LayoutGrid } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 
-const UsersView = () => {
+const UsersView = ({ globalMode = false }) => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreateForm, setShowCreateForm] = useState(false);
@@ -325,13 +325,15 @@ const UsersView = () => {
                                     {new Date(u.created_at).toLocaleDateString()}
                                 </td>
                                 <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem' }}>
-                                    <button
-                                        onClick={() => handleOpenApps(u)}
-                                        style={{ background: 'transparent', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', opacity: 0.7, padding: '5px' }}
-                                        title="Gestionar Acceso a Apps"
-                                    >
-                                        <LayoutGrid size={18} />
-                                    </button>
+                                    {globalMode && (
+                                        <button
+                                            onClick={() => handleOpenApps(u)}
+                                            style={{ background: 'transparent', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', opacity: 0.7, padding: '5px' }}
+                                            title="Gestionar Acceso a Apps"
+                                        >
+                                            <LayoutGrid size={18} />
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => handleOpenPerms(u)}
                                         style={{ background: 'transparent', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', opacity: 0.7, padding: '5px' }}
