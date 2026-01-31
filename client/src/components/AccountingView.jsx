@@ -8,15 +8,13 @@ import {
     PlusCircle,
     Users,
     PieChart,
-    ArrowRightLeft,
-    TrendingUp,
-    TrendingDown,
+    Download,
     Building2,
-    Search
+    FileSpreadsheet
 } from 'lucide-react';
 
 const AccountingView = () => {
-    const [activeTab, setActiveTab] = useState('accounts');
+    const [activeTab, setActiveTab] = useState('balances');
     const [accounts, setAccounts] = useState([]);
     const [entries, setEntries] = useState([]);
     const [entities, setEntities] = useState([]);
@@ -58,6 +56,73 @@ const AccountingView = () => {
     };
 
     useEffect(() => { fetchData(); }, []);
+
+    // --- CSV EXPORT ENGINE ---
+    const downloadCSV = (data, filename) => {
+        if (!data || data.length === 0) {
+            toast.error('No hay datos para exportar');
+            return;
+        }
+
+        const headers = Object.keys(data[0]);
+        const csvRows = [headers.join(';')];
+
+        for (const row of data) {
+            const values = headers.map(header => {
+                const val = row[header];
+                return `"${String(val).replace(/"/g, '""')}"`;
+            });
+            csvRows.push(values.join(';'));
+        }
+
+        const csvString = csvRows.join('\n');
+        const blob = new Blob(['\ufeff' + csvString], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const exportBalances = () => {
+        const data = accounts.map(acc => {
+            const bal = balances.accounts[acc.id] || { debit: 0, credit: 0, total: 0 };
+            return {
+                Codigo: acc.code,
+                Nombre: acc.name,
+                Tipo: acc.type,
+                Debe: bal.debit.toFixed(2),
+                Haber: bal.credit.toFixed(2),
+                Saldo: bal.total.toFixed(2),
+                Estado: bal.total >= 0 ? 'Deudor' : 'Acreedor'
+            };
+        });
+        downloadCSV(data, 'Balances_Cuentas');
+    };
+
+    const exportEntries = () => {
+        const data = [];
+        entries.forEach(entry => {
+            entry.items.forEach(item => {
+                const account = accounts.find(a => a.id === item.accountId);
+                const entity = entities.find(e => e.id === item.entityId);
+                data.push({
+                    ID: entry.id,
+                    Fecha: entry.date,
+                    Concepto: entry.description,
+                    Cuenta: account?.name || '?',
+                    Codigo_Cuenta: account?.code || '?',
+                    Entidad: entity?.name || '-',
+                    Debe: parseFloat(item.debit).toFixed(2),
+                    Haber: parseFloat(item.credit).toFixed(2)
+                });
+            });
+        });
+        downloadCSV(data, 'Libro_Diario');
+    };
 
     const handleCreateAccount = async (e) => {
         e.preventDefault();
@@ -172,7 +237,12 @@ const AccountingView = () => {
             {activeTab === 'balances' && (
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
                     <div className="glass-panel" style={{ padding: '2rem' }}>
-                        <h3 style={{ marginTop: 0 }}>Saldos de Cuentas</h3>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ margin: 0 }}>Saldos de Cuentas</h3>
+                            <button onClick={exportBalances} className="glass-panel" style={{ padding: '8px 15px', display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid #10b98133', color: '#10b981', cursor: 'pointer' }}>
+                                <FileSpreadsheet size={18} /> Exportar Excel
+                            </button>
+                        </div>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
                                 <tr style={{ borderBottom: '1px solid var(--card-border)', opacity: 0.6 }}>
@@ -201,7 +271,7 @@ const AccountingView = () => {
                         </table>
                     </div>
                     <div className="glass-panel" style={{ padding: '2rem' }}>
-                        <h3 style={{ marginTop: 0 }}>Resumen de Entidades</h3>
+                        <h3 style={{ marginTop: 0 }}>Sumas Corrientes</h3>
                         {entities.map(ent => {
                             const bal = balances.entities[ent.id] || { total: 0 };
                             return (
@@ -224,7 +294,7 @@ const AccountingView = () => {
             {activeTab === 'entities' && (
                 <div className="glass-panel" style={{ padding: '2rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                        <h3 style={{ margin: 0 }}>Clientes y Proveedores</h3>
+                        <h3 style={{ margin: 0 }}>Cuentas Corrientes (Entidades)</h3>
                         <button onClick={() => setShowEntityForm(!showEntityForm)} className="btn-primary" style={{ padding: '10px 20px' }}>+ Nueva Entidad</button>
                     </div>
 
@@ -251,7 +321,7 @@ const AccountingView = () => {
                                 <th style={{ padding: '1rem', textAlign: 'left' }}>Nombre</th>
                                 <th style={{ padding: '1rem', textAlign: 'left' }}>Tipo</th>
                                 <th style={{ padding: '1rem', textAlign: 'left' }}>Identificación</th>
-                                <th style={{ padding: '1rem', textAlign: 'right' }}>Cuenta Corriente</th>
+                                <th style={{ padding: '1rem', textAlign: 'right' }}>Saldo Pendiente</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -260,8 +330,8 @@ const AccountingView = () => {
                                     <td style={{ padding: '1rem', fontWeight: '500' }}>{ent.name}</td>
                                     <td style={{ padding: '1rem' }}>{ent.type === 'Client' ? 'Cliente' : 'Proveedor'}</td>
                                     <td style={{ padding: '1rem' }}>{ent.cuit || '-'}</td>
-                                    <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold' }}>
-                                        $ {(balances.entities[ent.id]?.total || 0).toFixed(2)}
+                                    <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold', color: (balances.entities[ent.id]?.total || 0) > 0 ? '#10b981' : ((balances.entities[ent.id]?.total || 0) < 0 ? '#ef4444' : 'inherit') }}>
+                                        $ {Math.abs(balances.entities[ent.id]?.total || 0).toFixed(2)}
                                     </td>
                                 </tr>
                             ))}
@@ -274,8 +344,13 @@ const AccountingView = () => {
             {activeTab === 'entries' && (
                 <div className="glass-panel" style={{ padding: '2rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                        <h3 style={{ margin: 0 }}>Registro de Operaciones</h3>
-                        <button onClick={() => setShowEntryForm(!showEntryForm)} className="btn-primary">+ Nuevo Asiento</button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <h3 style={{ margin: 0 }}>Libro Diario</h3>
+                            <button onClick={exportEntries} className="glass-panel" style={{ padding: '5px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px', color: '#10b981', cursor: 'pointer' }}>
+                                <Download size={14} /> Backup CSV
+                            </button>
+                        </div>
+                        <button onClick={() => setShowEntryForm(!showEntryForm)} className="btn-primary">+ Registrar Operación</button>
                     </div>
 
                     <AnimatePresence>
@@ -307,7 +382,7 @@ const AccountingView = () => {
                                         <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>Diferencia: </span>
                                         <strong>$ {(totals.debit - totals.credit).toFixed(2)}</strong>
                                     </div>
-                                    <button type="submit" disabled={!isBalanced || totals.debit === 0} className="btn-primary" style={{ padding: '8px 40px', opacity: isBalanced ? 1 : 0.5 }}>Confirmar</button>
+                                    <button type="submit" disabled={!isBalanced || totals.debit === 0} className="btn-primary" style={{ padding: '10px 40px', opacity: isBalanced ? 1 : 0.5 }}>Confirmar Asiento</button>
                                 </div>
                             </motion.form>
                         )}
@@ -343,8 +418,11 @@ const AccountingView = () => {
             {activeTab === 'accounts' && (
                 <div className="glass-panel" style={{ padding: '2rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                        <h3 style={{ margin: 0 }}>Estructura del Plan de Cuentas</h3>
-                        <button onClick={() => setShowAccountForm(!showAccountForm)} className="btn-primary">+ Nueva Cuenta</button>
+                        <h3 style={{ margin: 0 }}>Plan Masivo de Cuentas</h3>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button onClick={() => downloadCSV(accounts, 'Plan_Maestro_Cuentas')} className="glass-panel" style={{ padding: '8px 15px', color: '#6366f1', cursor: 'pointer' }}>Exportar Plan</button>
+                            <button onClick={() => setShowAccountForm(!showAccountForm)} className="btn-primary">+ Nueva Cuenta</button>
+                        </div>
                     </div>
 
                     <AnimatePresence>
@@ -352,8 +430,8 @@ const AccountingView = () => {
                             <motion.form initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} onSubmit={handleCreateAccount}
                                 style={{ overflow: 'hidden', paddingBottom: '2rem' }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr 1fr', gap: '1rem' }}>
-                                    <input type="text" placeholder="Código (1.1.0)" value={newAccount.code} onChange={e => setNewAccount({ ...newAccount, code: e.target.value })} required className="glass-panel" style={{ padding: '10px', background: 'transparent', color: 'inherit' }} />
-                                    <input type="text" placeholder="Nombre de la Cuenta" value={newAccount.name} onChange={e => setNewAccount({ ...newAccount, name: e.target.value })} required className="glass-panel" style={{ padding: '10px', background: 'transparent', color: 'inherit' }} />
+                                    <input type="text" placeholder="Código" value={newAccount.code} onChange={e => setNewAccount({ ...newAccount, code: e.target.value })} required className="glass-panel" style={{ padding: '10px', background: 'transparent', color: 'inherit' }} />
+                                    <input type="text" placeholder="Nombre completo" value={newAccount.name} onChange={e => setNewAccount({ ...newAccount, name: e.target.value })} required className="glass-panel" style={{ padding: '10px', background: 'transparent', color: 'inherit' }} />
                                     <select value={newAccount.type} onChange={e => setNewAccount({ ...newAccount, type: e.target.value })} className="glass-panel" style={{ padding: '10px', background: 'var(--card-bg)', color: 'inherit' }}>
                                         <option value="Activo">Activo</option>
                                         <option value="Pasivo">Pasivo</option>
