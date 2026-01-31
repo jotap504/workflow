@@ -8,7 +8,7 @@ const UsersView = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreateForm, setShowCreateForm] = useState(false);
-    const [newUser, setNewUser] = useState({ username: '', password: '', role: 'user' });
+    const [newUser, setNewUser] = useState({ username: '', email: '', password: '', role: 'user' });
     const [categories, setCategories] = useState([]);
     const [selectedUserForPerms, setSelectedUserForPerms] = useState(null);
     const [userPerms, setUserPerms] = useState([]);
@@ -43,7 +43,7 @@ const UsersView = () => {
 
             if (response.ok) {
                 toast.success('Usuario creado exitosamente');
-                setNewUser({ username: '', password: '', role: 'user' });
+                setNewUser({ username: '', email: '', password: '', role: 'user' });
                 setShowCreateForm(false);
                 fetchUsers();
             } else {
@@ -210,6 +210,16 @@ const UsersView = () => {
                                     type="text"
                                     value={newUser.username}
                                     onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                                    required
+                                    style={{ width: '100%', background: 'transparent', border: '1px solid var(--card-border)', padding: '10px', borderRadius: '8px', color: 'inherit', outline: 'none' }}
+                                />
+                            </div>
+                            <div style={{ flex: 1, minWidth: '200px' }}>
+                                <label style={{ display: 'block', fontSize: '0.8rem', opacity: 0.6, marginBottom: '4px' }}>Email</label>
+                                <input
+                                    type="email"
+                                    value={newUser.email}
+                                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                                     required
                                     style={{ width: '100%', background: 'transparent', border: '1px solid var(--card-border)', padding: '10px', borderRadius: '8px', color: 'inherit', outline: 'none' }}
                                 />
