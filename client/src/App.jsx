@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from './context/AuthContext'
 import PrivateRoute from './components/PrivateRoute'
@@ -11,6 +11,7 @@ import CalendarView from './components/CalendarView'
 import PollsView from './components/PollsView'
 import ReportsView from './components/ReportsView'
 import HubView from './components/HubView'
+import UsersView from './components/UsersView'
 import ProfileView from './components/ProfileView'
 import CategoriesView from './components/CategoriesView'
 import NotificationBell from './components/NotificationBell';
@@ -53,8 +54,6 @@ const Dashboard = () => {
             <NavIcon to="/polls" icon={<Vote size={18} />} label="Votaciones" navigate={navigate} />
             <NavIcon to="/reports" icon={<BarChart size={18} />} label="Reportes" navigate={navigate} />
             <NavIcon to="/profile" icon={<User size={18} />} label="Perfil" navigate={navigate} />
-            {(user?.role === 'admin' || user?.role === 'manager') && <NavIcon to="/categories" icon={<Layers size={18} />} label="Categorías" navigate={navigate} />}
-            {user?.role === 'admin' && <NavIcon to="/users" icon={<Users size={18} />} label="Usuarios" navigate={navigate} />}
           </nav>
         </div>
 
@@ -147,9 +146,7 @@ const Dashboard = () => {
           <Route path="/calendar" element={<CalendarView />} />
           <Route path="/polls" element={<PollsView />} />
           <Route path="/reports" element={<ReportsView />} />
-          <Route path="/users" element={<UsersView />} />
           <Route path="/profile" element={<ProfileView />} />
-          <Route path="/categories" element={<CategoriesView />} />
         </Routes>
       </main>
     </div>
@@ -157,6 +154,7 @@ const Dashboard = () => {
 }
 
 const NavIcon = ({ to, icon, label, navigate }) => {
+  const location = useLocation();
   const isActive = location.pathname === to;
   return (
     <button
@@ -178,6 +176,50 @@ const NavIcon = ({ to, icon, label, navigate }) => {
     >
       {icon}
     </button>
+  );
+}
+
+const AdminSuite = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  return (
+    <div className="container">
+      <header className="glass-panel" style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '2rem',
+        padding: '0.8rem 1rem',
+        borderRadius: '16px',
+        position: 'relative',
+        zIndex: 1000
+      }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: '600', letterSpacing: '0.5px', margin: 0 }}>Admin Suite</h2>
+          <nav className="desktop-nav" style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', marginLeft: '1rem' }}>
+            <NavIcon to="/hub" icon={<LayoutGrid size={18} />} label="Menu Principal" navigate={navigate} />
+            <NavIcon to="/admin-suite" icon={<Users size={18} />} label="Usuarios" navigate={navigate} />
+            <NavIcon to="/admin-suite/categories" icon={<Layers size={18} />} label="Categorías" navigate={navigate} />
+          </nav>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.1' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: '500' }}>{user?.username}</span>
+            <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>Panel de Gestión</span>
+          </div>
+          <button onClick={logout} style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <LogOut size={16} />
+          </button>
+        </div>
+      </header>
+      <main>
+        <Routes>
+          <Route path="/" element={<UsersView />} />
+          <Route path="/categories" element={<CategoriesView />} />
+        </Routes>
+      </main>
+    </div>
   );
 }
 
@@ -215,6 +257,11 @@ function App() {
           <Route path="/hub" element={
             <PrivateRoute>
               <HubView />
+            </PrivateRoute>
+          } />
+          <Route path="/admin-suite/*" element={
+            <PrivateRoute>
+              {user?.role === 'admin' ? <AdminSuite /> : <HubView />}
             </PrivateRoute>
           } />
           <Route path="/*" element={

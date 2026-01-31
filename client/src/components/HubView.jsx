@@ -40,7 +40,7 @@ const HubView = () => {
             description: 'Control central de usuarios y licencias.',
             icon: <Settings size={32} />,
             color: '#64748b',
-            path: '/users',
+            path: '/admin-suite',
             adminOnly: true
         }
     ];
