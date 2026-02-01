@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
 const app = express();
@@ -27,7 +26,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/accounting', require('./routes/accounting'));
 app.use('/api/clients', require('./routes/clients'));
-app.use('/api/users', require('./routes/users'));
+// app.use('/api/users', require('./routes/users'));
 
 // Static Uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

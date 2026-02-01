@@ -78,21 +78,24 @@ const HubView = () => {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: '4rem'
+                marginBottom: window.innerWidth < 640 ? '2rem' : '4rem',
+                flexDirection: window.innerWidth < 640 ? 'column' : 'row',
+                textAlign: window.innerWidth < 640 ? 'center' : 'left',
+                gap: '1.5rem'
             }}>
                 <div>
-                    <h1 style={{ fontSize: '2rem', fontWeight: '700', margin: 0 }}>Business Suite</h1>
+                    <h1 style={{ fontSize: window.innerWidth < 640 ? '1.5rem' : '2rem', fontWeight: '700', margin: 0 }}>Business Suite</h1>
                     <p style={{ opacity: 0.6 }}>Bienvenido de nuevo, {user?.username}</p>
                 </div>
-                <button onClick={logout} className="glass-panel" style={{ padding: '8px 16px', color: '#ef4444', border: 'none', cursor: 'pointer' }}>
+                <button onClick={logout} className="glass-panel" style={{ padding: '8px 16px', color: '#ef4444', border: 'none', cursor: 'pointer', width: window.innerWidth < 640 ? '100%' : 'auto' }}>
                     Cerrar Sesión
                 </button>
             </header>
 
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                gap: '2rem',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
+                gap: window.innerWidth < 640 ? '1rem' : '2rem',
                 width: '100%',
                 maxWidth: '1000px'
             }}>

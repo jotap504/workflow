@@ -218,11 +218,11 @@ const AccountingView = () => {
                         <Building2 size={28} />
                     </div>
                     <div>
-                        <h2 style={{ margin: 0 }}>Financial Hub</h2>
-                        <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>Gestión Profesional y Reportes de Resultados</span>
+                        <h2 style={{ margin: 0, fontSize: window.innerWidth < 640 ? '1.2rem' : '1.5rem' }}>Financial Hub</h2>
+                        <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>Gestión Profesional y Resultados</span>
                     </div>
                 </div>
-                <div className="glass-panel" style={{ display: 'flex', padding: '4px', borderRadius: '12px', gap: '4px', overflowX: 'auto' }}>
+                <div className="hide-scrollbar" style={{ display: 'flex', padding: '4px', borderRadius: '12px', gap: '4px', overflowX: 'auto', maxWidth: window.innerWidth < 640 ? '200px' : 'none' }}>
                     {[
                         { id: 'reports', label: 'Resultados', icon: <BarChart3 size={16} /> },
                         { id: 'balances', label: 'Saldos', icon: <PieChart size={16} /> },
@@ -251,7 +251,7 @@ const AccountingView = () => {
             {/* TAB: REPORTS (P&L) */}
             {activeTab === 'reports' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 768 ? '1fr' : 'repeat(3, 1fr)', gap: '1rem' }}>
                         <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '4px solid #10b981' }}>
                             <div style={{ background: '#10b98122', padding: '10px', borderRadius: '12px', color: '#10b981' }}><TrendingUp /></div>
                             <div>
@@ -300,40 +300,42 @@ const AccountingView = () => {
 
             {/* TAB: BALANCES */}
             {activeTab === 'balances' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
-                    <div className="glass-panel" style={{ padding: '2rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 992 ? '1fr' : '2fr 1fr', gap: '2rem' }}>
+                    <div className="glass-panel" style={{ padding: window.innerWidth < 640 ? '1rem' : '2rem' }}>
+                        <div style={{ display: 'flex', flexDirection: window.innerWidth < 640 ? 'column' : 'row', justifyContent: 'space-between', alignItems: window.innerWidth < 640 ? 'stretch' : 'center', marginBottom: '1.5rem', gap: '1rem' }}>
                             <h3 style={{ margin: 0 }}>Estado de Cuentas</h3>
-                            <button onClick={exportBalances} className="glass-panel" style={{ padding: '8px 15px', display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid #10b98133', color: '#10b981', cursor: 'pointer' }}>
+                            <button onClick={exportBalances} className="glass-panel" style={{ padding: '8px 15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: '1px solid #10b98133', color: '#10b981', cursor: 'pointer' }}>
                                 <FileSpreadsheet size={18} /> Planilla Excel
                             </button>
                         </div>
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead>
-                                <tr style={{ borderBottom: '1px solid var(--card-border)', opacity: 0.6 }}>
-                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Nombre de Cuenta</th>
-                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Debe</th>
-                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Haber</th>
-                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Saldo</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {accounts.map(acc => {
-                                    const bal = balances.accounts[acc.id] || { debit: 0, credit: 0, total: 0 };
-                                    if (bal.debit === 0 && bal.credit === 0) return null;
-                                    return (
-                                        <tr key={acc.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                            <td style={{ padding: '1rem' }}>{acc.name} <small style={{ opacity: 0.4 }}>({acc.code})</small></td>
-                                            <td style={{ padding: '1rem', textAlign: 'right' }}>$ {bal.debit.toFixed(2)}</td>
-                                            <td style={{ padding: '1rem', textAlign: 'right', color: '#94a3b8' }}>$ {bal.credit.toFixed(2)}</td>
-                                            <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold', color: bal.total >= 0 ? '#10b981' : '#ef4444' }}>
-                                                $ {Math.abs(bal.total).toFixed(2)} {bal.total >= 0 ? 'D' : 'H'}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                        <div className="responsive-table-wrapper">
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '1px solid var(--card-border)', opacity: 0.6 }}>
+                                        <th style={{ padding: '1rem', textAlign: 'left' }}>Nombre de Cuenta</th>
+                                        <th style={{ padding: '1rem', textAlign: 'right' }}>Debe</th>
+                                        <th style={{ padding: '1rem', textAlign: 'right' }}>Haber</th>
+                                        <th style={{ padding: '1rem', textAlign: 'right' }}>Saldo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {accounts.map(acc => {
+                                        const bal = balances.accounts[acc.id] || { debit: 0, credit: 0, total: 0 };
+                                        if (bal.debit === 0 && bal.credit === 0) return null;
+                                        return (
+                                            <tr key={acc.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <td style={{ padding: '1rem' }}>{acc.name} <small style={{ opacity: 0.4 }}>({acc.code})</small></td>
+                                                <td style={{ padding: '1rem', textAlign: 'right' }}>$ {bal.debit.toFixed(2)}</td>
+                                                <td style={{ padding: '1rem', textAlign: 'right', color: '#94a3b8' }}>$ {bal.credit.toFixed(2)}</td>
+                                                <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold', color: bal.total >= 0 ? '#10b981' : '#ef4444' }}>
+                                                    $ {Math.abs(bal.total).toFixed(2)} {bal.total >= 0 ? 'D' : 'H'}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                     <div className="glass-panel" style={{ padding: '2rem' }}>
                         <h3 style={{ marginTop: 0 }}>Cuentas Corrientes</h3>
@@ -405,13 +407,21 @@ const AccountingView = () => {
                     <AnimatePresence>
                         {showEntryForm && (
                             <motion.form initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} onSubmit={handleCreateEntry} style={{ overflow: 'hidden', paddingBottom: '2rem' }}>
-                                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                                <div style={{ display: 'flex', flexDirection: window.innerWidth < 640 ? 'column' : 'row', gap: '1rem', marginBottom: '1rem' }}>
                                     <input type="date" value={newEntry.date} onChange={e => setNewEntry({ ...newEntry, date: e.target.value })} className="glass-panel" style={{ padding: '10px', color: 'inherit', background: 'transparent' }} />
                                     <input type="text" placeholder="Concepto del movimiento..." value={newEntry.description} onChange={e => setNewEntry({ ...newEntry, description: e.target.value })} className="glass-panel" style={{ flex: 1, padding: '10px', color: 'inherit', background: 'transparent' }} />
                                 </div>
 
                                 {newEntry.items.map((item, idx) => (
-                                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <div key={idx} className="glass-panel" style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '2fr 1fr 1fr 1fr 1fr',
+                                        gap: '0.5rem',
+                                        marginBottom: '1rem',
+                                        padding: window.innerWidth < 768 ? '1rem' : '0',
+                                        background: window.innerWidth < 768 ? 'rgba(255,255,255,0.03)' : 'transparent',
+                                        border: window.innerWidth < 768 ? '1px solid var(--card-border)' : 'none'
+                                    }}>
                                         <select value={item.accountId} onChange={e => updateEntryItem(idx, 'accountId', e.target.value)} required className="glass-panel" style={{ padding: '10px', background: 'var(--card-bg)', color: 'inherit' }}>
                                             <option value="">Seleccionar cuenta...</option>
                                             {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.code} - {acc.name}</option>)}
@@ -429,12 +439,22 @@ const AccountingView = () => {
                                     </div>
                                 ))}
 
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '2rem', padding: '1.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', marginTop: '1rem' }}>
-                                    <div style={{ color: isBalanced ? 'inherit' : '#ef4444' }}>
+                                <div style={{
+                                    display: 'flex',
+                                    flexDirection: window.innerWidth < 640 ? 'column' : 'row',
+                                    justifyContent: 'flex-end',
+                                    alignItems: 'center',
+                                    gap: '1.5rem',
+                                    padding: '1.5rem',
+                                    background: 'rgba(255,255,255,0.03)',
+                                    borderRadius: '12px',
+                                    marginTop: '1rem'
+                                }}>
+                                    <div style={{ color: isBalanced ? 'inherit' : '#ef4444', textAlign: 'center' }}>
                                         <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>Diferencia: </span>
                                         <strong>$ {(totals.debit - totals.credit).toFixed(2)}</strong>
                                     </div>
-                                    <button type="submit" disabled={!isBalanced || totals.debit === 0} className="btn-primary" style={{ padding: '10px 40px', opacity: isBalanced ? 1 : 0.5 }}>Confirmar Asiento</button>
+                                    <button type="submit" disabled={!isBalanced || totals.debit === 0} className="btn-primary" style={{ padding: '10px 40px', width: window.innerWidth < 640 ? '100%' : 'auto', opacity: isBalanced ? 1 : 0.5 }}>Confirmar Asiento</button>
                                 </div>
                             </motion.form>
                         )}
@@ -499,25 +519,27 @@ const AccountingView = () => {
                         )}
                     </AnimatePresence>
 
-                    <div className="glass-panel" style={{ padding: '1rem' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead>
-                                <tr style={{ borderBottom: '1px solid var(--card-border)', opacity: 0.6 }}>
-                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Código</th>
-                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Nombre</th>
-                                    <th style={{ padding: '1rem', textAlign: 'left' }}>Tipo</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {accounts.map(acc => (
-                                    <tr key={acc.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                        <td style={{ padding: '0.8rem 1rem', fontFamily: 'monospace' }}>{acc.code}</td>
-                                        <td style={{ padding: '0.8rem 1rem' }}>{acc.name}</td>
-                                        <td style={{ padding: '0.8rem 1rem' }}><span style={{ fontSize: '0.75rem', opacity: 0.6, background: 'rgba(255,255,255,0.05)', padding: '2px 10px', borderRadius: '12px' }}>{acc.type}</span></td>
+                    <div className="responsive-table-wrapper">
+                        <div className="glass-panel" style={{ padding: '1rem', minWidth: '600px' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '1px solid var(--card-border)', opacity: 0.6 }}>
+                                        <th style={{ padding: '1rem', textAlign: 'left' }}>Código</th>
+                                        <th style={{ padding: '1rem', textAlign: 'left' }}>Nombre</th>
+                                        <th style={{ padding: '1rem', textAlign: 'left' }}>Tipo</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {accounts.map(acc => (
+                                        <tr key={acc.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <td style={{ padding: '0.8rem 1rem', fontFamily: 'monospace' }}>{acc.code}</td>
+                                            <td style={{ padding: '0.8rem 1rem' }}>{acc.name}</td>
+                                            <td style={{ padding: '0.8rem 1rem' }}><span style={{ fontSize: '0.75rem', opacity: 0.6, background: 'rgba(255,255,255,0.05)', padding: '2px 10px', borderRadius: '12px' }}>{acc.type}</span></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             )}

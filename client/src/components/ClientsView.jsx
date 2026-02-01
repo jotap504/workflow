@@ -112,14 +112,23 @@ const ClientsView = () => {
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="container" style={{ maxWidth: '1100px' }}>
             {/* Header Area */}
-            <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem', borderRadius: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="glass-panel" style={{
+                padding: window.innerWidth < 640 ? '1.5rem' : '2rem',
+                marginBottom: '2rem',
+                borderRadius: '32px',
+                display: 'flex',
+                flexDirection: window.innerWidth < 640 ? 'column' : 'row',
+                justifyContent: 'space-between',
+                alignItems: window.innerWidth < 640 ? 'stretch' : 'center',
+                gap: '1.5rem'
+            }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                     <div style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', padding: '15px', borderRadius: '20px', color: 'white', boxShadow: '0 10px 15px -3px rgba(37, 99, 235, 0.3)' }}>
                         <Users size={32} />
                     </div>
                     <div>
-                        <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: '800' }}>Contactos Pro</h2>
-                        <span style={{ fontSize: '0.9rem', opacity: 0.6 }}>Base de datos centralizada de clientes y proveedores</span>
+                        <h2 style={{ margin: 0, fontSize: window.innerWidth < 640 ? '1.4rem' : '1.8rem', fontWeight: '800' }}>Contactos Pro</h2>
+                        <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>Base de datos centralizada</span>
                     </div>
                 </div>
                 <button
@@ -129,7 +138,7 @@ const ClientsView = () => {
                         setShowForm(true);
                     }}
                     className="btn-primary"
-                    style={{ padding: '12px 24px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}
+                    style={{ padding: '12px 24px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
                 >
                     <Plus size={20} /> Nuevo Contacto
                 </button>
@@ -162,7 +171,7 @@ const ClientsView = () => {
                             <h3 style={{ marginTop: 0, marginBottom: '2rem', fontSize: '1.5rem' }}>{editingClient ? 'Editar Contacto' : 'Crear Nuevo Contacto'}</h3>
 
                             <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1.2rem' }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 640 ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                                     <div>
                                         <label style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '0.5rem', display: 'block' }}>Razón Social *</label>
                                         <div style={{ position: 'relative' }}>
@@ -179,7 +188,7 @@ const ClientsView = () => {
                                     </div>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 640 ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                                     <div>
                                         <label style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '0.5rem', display: 'block' }}>Teléfono (Opcional)</label>
                                         <div style={{ position: 'relative' }}>
@@ -222,7 +231,7 @@ const ClientsView = () => {
             </AnimatePresence>
 
             {/* List Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '1.5rem' }}>
                 {filteredClients.map(client => (
                     <motion.div
                         layout

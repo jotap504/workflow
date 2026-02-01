@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Paperclip, Calendar as CalendarIcon, Flag, Plus, MessageSquare, X, Send, ChevronDown, ChevronRight, Play, Check, RotateCcw, History } from 'lucide-react';
+import { Paperclip, Calendar as CalendarIcon, Flag, Plus, MessageSquare, X, Send, ChevronDown, ChevronRight, Play, Check, RotateCcw, History, Users } from 'lucide-react';
 import { io } from 'socket.io-client';
 
 // Standard socket initialization with explicit URL for dev
@@ -26,6 +26,7 @@ socket.on('connect_error', (err) => console.log('[SOCKET TaskBoard] Connection e
 const TaskBoard = ({ searchQuery = '' }) => {
     const [tasks, setTasks] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [clients, setClients] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedCategoryId, setSelectedCategoryId] = useState(null);
     const [showOnlyMine, setShowOnlyMine] = useState(false);
@@ -35,7 +36,8 @@ const TaskBoard = ({ searchQuery = '' }) => {
         description: '',
         urgency: 'medium',
         category_id: '',
-        recurrence: 'none'
+        recurrence: 'none',
+        client_id: ''
     });
     const [file, setFile] = useState(null);
 
@@ -44,6 +46,7 @@ const TaskBoard = ({ searchQuery = '' }) => {
     const [notes, setNotes] = useState([]);
     const [newNote, setNewNote] = useState('');
     const [loadingNotes, setLoadingNotes] = useState(false);
+    const [showTaskForm, setShowTaskForm] = useState(window.innerWidth > 768);
     const [collapsedColumns, setCollapsedColumns] = useState({
         pending: false,
         'in-progress': false,
@@ -54,9 +57,10 @@ const TaskBoard = ({ searchQuery = '' }) => {
         try {
             const token = localStorage.getItem('token');
             const headers = { 'Authorization': `Bearer ${token}` };
-            const [tasksRes, catsRes] = await Promise.all([
+            const [tasksRes, catsRes, clientsRes] = await Promise.all([
                 fetch('/api/tasks', { headers }),
-                fetch('/api/categories', { headers })
+                fetch('/api/categories', { headers }),
+                fetch('/api/clients')
             ]);
             if (tasksRes.ok) setTasks(await tasksRes.json());
             if (catsRes.ok) {
@@ -67,6 +71,7 @@ const TaskBoard = ({ searchQuery = '' }) => {
                     setNewTask(prev => ({ ...prev, category_id: general.id }));
                 }
             }
+            if (clientsRes.ok) setClients(await clientsRes.json());
         } catch (error) {
             console.error(error);
             toast.error('Error al cargar datos');
@@ -172,6 +177,7 @@ const TaskBoard = ({ searchQuery = '' }) => {
             formData.append('urgency', newTask.urgency);
             formData.append('category_id', newTask.category_id);
             formData.append('recurrence', newTask.recurrence);
+            if (newTask.client_id) formData.append('client_id', newTask.client_id);
             if (newTask.due_date) formData.append('due_date', newTask.due_date);
             if (file) formData.append('attachment', file);
 
@@ -183,10 +189,11 @@ const TaskBoard = ({ searchQuery = '' }) => {
 
             if (response.ok) {
                 const general = categories.find(c => c.name === 'General') || categories[0];
-                setNewTask({ title: '', description: '', urgency: 'medium', category_id: general?.id || '', recurrence: 'none' });
+                setNewTask({ title: '', description: '', urgency: 'medium', category_id: general?.id || '', recurrence: 'none', client_id: '' });
                 setFile(null);
                 fetchData();
                 toast.success('Tarea creada exitosamente');
+                if (window.innerWidth <= 768) setShowTaskForm(false);
             } else {
                 toast.error('Error al crear tarea');
             }
@@ -289,102 +296,137 @@ const TaskBoard = ({ searchQuery = '' }) => {
                 </button>
             </div>
 
-            {/* NEW TASK FORM */}
-            <div className="glass-panel" style={{ padding: '1rem', marginBottom: '1.5rem', border: '1px solid var(--card-border)' }}>
-                <form onSubmit={handleCreateTask} style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                        <input
-                            type="text"
-                            placeholder="¿Qué hay que hacer?"
-                            value={newTask.title}
-                            onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                            style={{
-                                background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)',
-                                padding: '0.5rem 0', fontSize: '1.1rem', color: 'inherit', outline: 'none'
-                            }}
-                            required
-                        />
-                        <input
-                            type="text"
-                            placeholder="Añadir descripción..."
-                            value={newTask.description}
-                            onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                            style={{ background: 'transparent', border: 'none', padding: '0.3rem 0', fontSize: '0.85rem', opacity: 0.6, outline: 'none' }}
-                        />
-                    </div>
+            {/* NEW TASK FORM (Mobile Toggle) */}
+            <div className="glass-panel" style={{ padding: '0.8rem', marginBottom: '1.5rem', border: '1px solid var(--card-border)' }}>
+                {window.innerWidth <= 768 && (
+                    <button
+                        onClick={() => setShowTaskForm(!showTaskForm)}
+                        style={{ width: '100%', background: 'transparent', border: 'none', color: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem' }}
+                    >
+                        <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>{showTaskForm ? 'Cerrar Nueva Tarea' : '+ Crear Nueva Tarea'}</span>
+                        {showTaskForm ? <X size={18} /> : <Plus size={18} />}
+                    </button>
+                )}
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
-                                {categories.slice(0, 4).map(cat => (
-                                    <button
-                                        key={cat.id}
-                                        type="button"
-                                        onClick={() => setNewTask({ ...newTask, category_id: cat.id })}
-                                        style={{
-                                            background: newTask.category_id == cat.id ? cat.color : 'transparent',
-                                            border: `1px solid ${newTask.category_id == cat.id ? 'transparent' : 'rgba(255,255,255,0.1)'}`,
-                                            color: newTask.category_id == cat.id ? 'white' : 'inherit',
-                                            borderRadius: '12px', padding: '2px 8px', fontSize: '0.7rem'
-                                        }}
-                                    >
-                                        {cat.name}
-                                    </button>
-                                ))}
-                            </div>
-
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', opacity: 0.8, fontSize: '0.85rem' }}>
-                                <input type="file" onChange={(e) => setFile(e.target.files[0])} style={{ display: 'none' }} />
-                                <Paperclip size={14} /> {file ? 'Listo' : 'Adjuntar'}
-                            </label>
-
-                            {/* Date Picker */}
-                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', opacity: 0.8 }}>
-                                <CalendarIcon size={14} />
+                <AnimatePresence>
+                    {showTaskForm && (
+                        <motion.form
+                            initial={window.innerWidth <= 768 ? { height: 0, opacity: 0 } : false}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            onSubmit={handleCreateTask}
+                            style={{ flexDirection: 'column', gap: '0.8rem', display: 'flex', overflow: 'hidden', paddingTop: window.innerWidth <= 768 ? '1rem' : '0' }}
+                        >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                                 <input
-                                    type="date"
-                                    value={newTask.due_date || ''}
-                                    onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
-                                    style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+                                    type="text"
+                                    placeholder="¿Qué hay que hacer?"
+                                    value={newTask.title}
+                                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                                    style={{
+                                        background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)',
+                                        padding: '0.5rem 0', fontSize: '1.1rem', color: 'inherit', outline: 'none'
+                                    }}
+                                    required
                                 />
-                                <span style={{ fontSize: '0.8rem' }}>{newTask.due_date ? new Date(newTask.due_date).toLocaleDateString() : 'Fecha'}</span>
+                                <input
+                                    type="text"
+                                    placeholder="Añadir descripción..."
+                                    value={newTask.description}
+                                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                                    style={{ background: 'transparent', border: 'none', padding: '0.3rem 0', fontSize: '0.85rem', opacity: 0.6, outline: 'none' }}
+                                />
                             </div>
 
-                            {/* Recurrence Selector */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <RotateCcw size={14} style={{ opacity: 0.8 }} />
-                                <select
-                                    value={newTask.recurrence}
-                                    onChange={(e) => setNewTask({ ...newTask, recurrence: e.target.value })}
-                                    style={{ background: 'transparent', border: 'none', color: 'inherit', fontSize: '0.8rem', cursor: 'pointer', outline: 'none' }}
-                                >
-                                    <option value="none">Una vez</option>
-                                    <option value="daily">Diaria</option>
-                                    <option value="weekly">Semanal</option>
-                                    <option value="monthly">Mensual</option>
-                                </select>
-                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+                                        {categories.slice(0, 4).map(cat => (
+                                            <button
+                                                key={cat.id}
+                                                type="button"
+                                                onClick={() => setNewTask({ ...newTask, category_id: cat.id })}
+                                                style={{
+                                                    background: newTask.category_id == cat.id ? cat.color : 'transparent',
+                                                    border: `1px solid ${newTask.category_id == cat.id ? 'transparent' : 'rgba(255,255,255,0.1)'}`,
+                                                    color: newTask.category_id == cat.id ? 'white' : 'inherit',
+                                                    borderRadius: '12px', padding: '2px 8px', fontSize: '0.7rem'
+                                                }}
+                                            >
+                                                {cat.name}
+                                            </button>
+                                        ))}
+                                    </div>
 
-                            {/* Urgency */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Flag size={14} style={{ opacity: 0.8 }} />
-                                <select
-                                    value={newTask.urgency}
-                                    onChange={(e) => setNewTask({ ...newTask, urgency: e.target.value })}
-                                    style={{ background: 'transparent', border: 'none', color: 'inherit', fontSize: '0.8rem', cursor: 'pointer', outline: 'none' }}
-                                >
-                                    <option value="low">Baja</option>
-                                    <option value="medium">Media</option>
-                                    <option value="high">Alta</option>
-                                </select>
-                            </div>
-                        </div>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', opacity: 0.8, fontSize: '0.85rem' }}>
+                                        <input type="file" onChange={(e) => setFile(e.target.files[0])} style={{ display: 'none' }} />
+                                        <Paperclip size={14} /> {file ? 'Listo' : 'Adjuntar'}
+                                    </label>
 
-                        <button type="submit" className="btn-primary" style={{ borderRadius: '20px', padding: '0.4rem 1.2rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Plus size={16} /> Crear
-                        </button>
-                    </div>
-                </form>
+                                    {/* Date Picker */}
+                                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', opacity: 0.8 }}>
+                                        <CalendarIcon size={14} />
+                                        <input
+                                            type="date"
+                                            value={newTask.due_date || ''}
+                                            onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
+                                            style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+                                        />
+                                        <span style={{ fontSize: '0.8rem' }}>{newTask.due_date ? new Date(newTask.due_date).toLocaleDateString() : 'Fecha'}</span>
+                                    </div>
+
+                                    {/* Recurrence Selector */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <RotateCcw size={14} style={{ opacity: 0.8 }} />
+                                        <select
+                                            value={newTask.recurrence}
+                                            onChange={(e) => setNewTask({ ...newTask, recurrence: e.target.value })}
+                                            style={{ background: 'transparent', border: 'none', color: 'inherit', fontSize: '0.8rem', cursor: 'pointer', outline: 'none' }}
+                                        >
+                                            <option value="none">Una vez</option>
+                                            <option value="daily">Diaria</option>
+                                            <option value="weekly">Semanal</option>
+                                            <option value="monthly">Mensual</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Urgency */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <Flag size={14} style={{ opacity: 0.8 }} />
+                                        <select
+                                            value={newTask.urgency}
+                                            onChange={(e) => setNewTask({ ...newTask, urgency: e.target.value })}
+                                            style={{ background: 'transparent', border: 'none', color: 'inherit', fontSize: '0.8rem', cursor: 'pointer', outline: 'none' }}
+                                        >
+                                            <option value="low">Baja</option>
+                                            <option value="medium">Media</option>
+                                            <option value="high">Alta</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Client Selector (NEW) */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <Users size={14} style={{ opacity: 0.8 }} />
+                                        <select
+                                            value={newTask.client_id}
+                                            onChange={(e) => setNewTask({ ...newTask, client_id: e.target.value })}
+                                            style={{ background: 'transparent', border: 'none', color: 'inherit', fontSize: '0.8rem', cursor: 'pointer', outline: 'none', maxWidth: '120px' }}
+                                        >
+                                            <option value="">Sin Cliente</option>
+                                            {clients.map(c => (
+                                                <option key={c.id} value={c.id}>{c.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <button type="submit" className="btn-primary" style={{ borderRadius: '20px', padding: '0.5rem 1.5rem', fontSize: '0.85rem' }}>
+                                    Crear Tarea
+                                </button>
+                            </div>
+                        </motion.form>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* COLUMNS */}
@@ -455,6 +497,12 @@ const TaskBoard = ({ searchQuery = '' }) => {
 
                                                 {task.description && <p style={{ fontSize: '0.85rem', margin: '0.4rem 0', opacity: 0.6, lineHeight: '1.3', display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{task.description}</p>}
 
+                                                {task.client_name && (
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '0.2rem' }}>
+                                                        <Users size={12} /> {task.client_name}
+                                                    </div>
+                                                )}
+
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.6rem' }}>
                                                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                                                         {task.attachment_url && (
@@ -520,18 +568,21 @@ const TaskBoard = ({ searchQuery = '' }) => {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
                             style={{
-                                width: '100%', maxWidth: '650px', height: '85vh',
+                                width: '100%',
+                                maxWidth: '650px',
+                                height: window.innerWidth < 640 ? '95vh' : '85vh',
                                 display: 'flex', flexDirection: 'column',
                                 overflow: 'hidden',
                                 background: '#ffffff',
                                 color: '#1e293b',
-                                borderRadius: '24px',
-                                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                                borderRadius: window.innerWidth < 640 ? '16px 16px 0 0' : '24px',
+                                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                                marginTop: window.innerWidth < 640 ? '5vh' : '0'
                             }}
                         >
-                            <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+                            <div style={{ padding: window.innerWidth < 640 ? '1rem 1.5rem' : '1.5rem 2rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
                                 <div>
-                                    <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '700', color: '#0f172a' }}>{selectedTask.title}</h3>
+                                    <h3 style={{ margin: 0, fontSize: window.innerWidth < 640 ? '1.1rem' : '1.4rem', fontWeight: '700', color: '#0f172a' }}>{selectedTask.title}</h3>
                                     <span style={{ fontSize: '0.85rem', color: '#64748b' }}>Autor: {selectedTask.creator_name || 'Admin'}</span>
                                 </div>
                                 <button
@@ -542,7 +593,7 @@ const TaskBoard = ({ searchQuery = '' }) => {
                                 </button>
                             </div>
 
-                            <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem 2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            <div style={{ flex: 1, overflowY: 'auto', padding: window.innerWidth < 640 ? '1rem 1.5rem' : '1.5rem 2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                 {selectedTask.description && (
                                     <div style={{ padding: '1.2rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
                                         <h5 style={{ margin: '0 0 8px 0', fontSize: '0.75rem', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em' }}>Descripción</h5>
@@ -583,7 +634,7 @@ const TaskBoard = ({ searchQuery = '' }) => {
                                 </div>
                             </div>
 
-                            <form onSubmit={handleAddNote} style={{ padding: '1.2rem 2rem', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '12px', background: '#f8fafc' }}>
+                            <form onSubmit={handleAddNote} style={{ padding: window.innerWidth < 640 ? '1rem 1.5rem' : '1.2rem 2rem', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '12px', background: '#f8fafc' }}>
                                 <input
                                     type="text"
                                     placeholder="Escribe un mensaje..."
@@ -608,7 +659,6 @@ const TaskBoard = ({ searchQuery = '' }) => {
                     </div>
                 )}
             </AnimatePresence>
-
         </motion.div>
     );
 };

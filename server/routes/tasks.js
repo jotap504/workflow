@@ -27,9 +27,10 @@ router.get('/', async (req, res) => {
 
             // 3. Fetch Category and Creator names (Manual Join)
             const enrichedTasks = await Promise.all(tasks.map(async t => {
-                const [catDoc, userDoc, notesSnap] = await Promise.all([
+                const [catDoc, userDoc, clientDoc, notesSnap] = await Promise.all([
                     t.category_id ? db.collection('categories').doc(t.category_id).get() : null,
                     t.created_by ? db.collection('users').doc(t.created_by).get() : null,
+                    t.client_id ? db.collection('hub_clients').doc(t.client_id).get() : null,
                     db.collection('task_notes').where('task_id', '==', t.id).get()
                 ]);
 
@@ -38,6 +39,7 @@ router.get('/', async (req, res) => {
                     category_name: catDoc && catDoc.exists ? catDoc.data().name : 'Sin Categoría',
                     category_color: catDoc && catDoc.exists ? catDoc.data().color : '#ccc',
                     creator_name: userDoc && userDoc.exists ? userDoc.data().username : 'Desconocido',
+                    client_name: clientDoc && clientDoc.exists ? clientDoc.data().name : null,
                     note_count: notesSnap.size
                 };
             }));
@@ -109,7 +111,7 @@ router.get('/', async (req, res) => {
 
 // POST /api/tasks - Create new task
 router.post('/', upload.single('attachment'), async (req, res) => {
-    const { title, description, urgency, category_id, due_date, recurrence } = req.body;
+    const { title, description, urgency, category_id, due_date, recurrence, client_id } = req.body;
     const attachment_url = req.file ? req.file.filename : null;
 
     if (!title) {
@@ -134,6 +136,7 @@ router.post('/', upload.single('attachment'), async (req, res) => {
                 created_by: req.userId, recurrence: recurrence || 'none',
                 is_recurring_parent: isParent,
                 status: 'pending',
+                client_id: client_id || null,
                 created_at: new Date().toISOString()
             };
 
@@ -234,7 +237,7 @@ router.post('/', upload.single('attachment'), async (req, res) => {
 
 // PUT /api/tasks/:id - Update task status or details
 router.put('/:id', async (req, res) => {
-    const { title, description, urgency, status, category_id, due_date } = req.body;
+    const { title, description, urgency, status, category_id, due_date, client_id } = req.body;
     const taskId = req.params.id;
 
     if (db.isFirebase) {
@@ -268,6 +271,7 @@ router.put('/:id', async (req, res) => {
             if (status !== undefined) updates.status = status;
             if (category_id !== undefined) updates.category_id = category_id;
             if (due_date !== undefined) updates.due_date = due_date;
+            if (client_id !== undefined) updates.client_id = client_id;
 
             await taskRef.update(updates);
             req.app.get('io').emit('tasks_updated');
