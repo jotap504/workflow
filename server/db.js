@@ -74,71 +74,72 @@ else if (isProd) {
 
 async function initFirebase() {
     try {
-        const productsSnap = await db.collection('products').limit(1).get();
-        if (productsSnap.empty) {
-            console.log('[FIREBASE] Seeding example products...');
-            const products = [
-                {
-                    name: 'Matcha Ceremonial Orgánico',
-                    description: 'Matcha de grado ceremonial premium proveniente de Uji, Japón. Sabor suave, umami vibrante y color verde intenso.',
-                    price: 45000,
-                    type: 'physical',
-                    image_url: '/products/matcha.png',
-                    category: 'Matcha',
-                    stock: 10,
-                    active: 1,
-                    created_at: new Date().toISOString()
-                },
-                {
-                    name: 'Batidor de Bambú (Chasen)',
-                    description: 'Batidor artesanal de bambú con 100 cerdas finas, esencial para lograr la espuma perfecta en tu matcha.',
-                    price: 15000,
-                    type: 'physical',
-                    image_url: '/products/whisk.png',
-                    category: 'Accesorios',
-                    stock: 10,
-                    active: 1,
-                    created_at: new Date().toISOString()
-                },
-                {
-                    name: 'Cuenco de Cerámica (Chawan)',
-                    description: 'Cuenco artesanal de cerámica diseñado específicamente para la preparación y el disfrute del matcha.',
-                    price: 28000,
-                    type: 'physical',
-                    image_url: '/products/bowl.png',
-                    category: 'Accesorios',
-                    stock: 10,
-                    active: 1,
-                    created_at: new Date().toISOString()
-                },
-                {
-                    name: 'Té Verde Sencha Premium',
-                    description: 'Hojas de té verde Sencha de primera cosecha. Un clásico japonés con notas herbales y refrescantes.',
-                    price: 12000,
-                    type: 'physical',
-                    image_url: '/products/sencha.png',
-                    category: 'Té en Hebras',
-                    stock: 10,
-                    active: 1,
-                    created_at: new Date().toISOString()
-                },
-                {
-                    name: 'Espumador Eléctrico Premium',
-                    description: 'Espumador de leche de acero inoxidable de alta potencia para preparar lattes de matcha cremosos en segundos.',
-                    price: 18500,
-                    type: 'physical',
-                    image_url: '/products/frother.png',
-                    category: 'Accesorios',
-                    stock: 10,
-                    active: 1,
-                    created_at: new Date().toISOString()
-                }
-            ];
-            for (const p of products) {
+        const products = [
+            {
+                name: 'Matcha Ceremonial Orgánico',
+                description: 'Matcha de grado ceremonial premium proveniente de Uji, Japón. Sabor suave, umami vibrante y color verde intenso.',
+                price: 45000,
+                type: 'physical',
+                image_url: '/products/matcha.png',
+                category: 'Matcha',
+                stock: 10,
+                active: 1,
+                created_at: new Date().toISOString()
+            },
+            {
+                name: 'Batidor de Bambú (Chasen)',
+                description: 'Batidor artesanal de bambú con 100 cerdas finas, esencial para lograr la espuma perfecta en tu matcha.',
+                price: 15000,
+                type: 'physical',
+                image_url: '/products/whisk.png',
+                category: 'Accesorios',
+                stock: 10,
+                active: 1,
+                created_at: new Date().toISOString()
+            },
+            {
+                name: 'Cuenco de Cerámica (Chawan)',
+                description: 'Cuenco artesanal de cerámica diseñado específicamente para la preparación y el disfrute del matcha.',
+                price: 28000,
+                type: 'physical',
+                image_url: '/products/bowl.png',
+                category: 'Accesorios',
+                stock: 10,
+                active: 1,
+                created_at: new Date().toISOString()
+            },
+            {
+                name: 'Té Verde Sencha Premium',
+                description: 'Hojas de té verde Sencha de primera cosecha. Un clásico japonés con notas herbales y refrescantes.',
+                price: 12000,
+                type: 'physical',
+                image_url: '/products/sencha.png',
+                category: 'Té en Hebras',
+                stock: 10,
+                active: 1,
+                created_at: new Date().toISOString()
+            },
+            {
+                name: 'Espumador Eléctrico Premium',
+                description: 'Espumador de leche de acero inoxidable de alta potencia para preparar lattes de matcha cremosos en segundos.',
+                price: 18500,
+                type: 'physical',
+                image_url: '/products/frother.png',
+                category: 'Accesorios',
+                stock: 10,
+                active: 1,
+                created_at: new Date().toISOString()
+            }
+        ];
+
+        for (const p of products) {
+            const snap = await db.collection('products').where('name', '==', p.name).limit(1).get();
+            if (snap.empty) {
+                console.log(`[FIREBASE] Seeding missing product: ${p.name}`);
                 await db.collection('products').add(p);
             }
-            console.log('[FIREBASE] Seeding complete.');
         }
+        console.log('[FIREBASE] Seeding check complete.');
     } catch (err) {
         console.error('[FIREBASE SEED ERROR]', err);
     }

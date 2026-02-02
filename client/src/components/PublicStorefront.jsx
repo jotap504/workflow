@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, ShoppingBag, X, Plus, Minus, Check, ArrowRight, BookOpen, Package } from 'lucide-react';
+import { ShoppingCart, ShoppingBag, X, Plus, Minus, Check, ArrowRight, BookOpen, Package, Trash2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +12,7 @@ const PublicStorefront = () => {
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [checkoutStep, setCheckoutStep] = useState('cart'); // cart, info, payment, success
     const [customerData, setCustomerData] = useState({ name: '', email: '' });
+    const [selectedProduct, setSelectedProduct] = useState(null);
     const navigate = useNavigate();
 
     const fetchProducts = async () => {
@@ -152,7 +153,8 @@ const PublicStorefront = () => {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: idx * 0.1 }}
                             className="glass-panel"
-                            style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', overflow: 'hidden' }}
+                            onClick={() => setSelectedProduct(product)}
+                            style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', overflow: 'hidden', cursor: 'pointer' }}
                         >
                             <div style={{ height: '200px', borderRadius: '12px', background: 'rgba(0,0,0,0.1)', overflow: 'hidden', position: 'relative' }}>
                                 {product.image_url ? (
@@ -237,7 +239,8 @@ const PublicStorefront = () => {
                                     )}
                                 </div>
                                 <button
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                        e.stopPropagation();
                                         addToCart({
                                             ...product,
                                             price: product.discount_price || product.price
@@ -312,18 +315,29 @@ const PublicStorefront = () => {
                                             </div>
                                         ) : (
                                             cart.map(item => (
-                                                <div key={item.id} className="glass-panel" style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                                <div key={item.id} className="glass-panel" style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', position: 'relative' }}>
                                                     <div style={{ width: '60px', height: '60px', borderRadius: '8px', background: 'rgba(0,0,0,0.1)', overflow: 'hidden' }}>
                                                         {item.image_url && <img src={item.image_url} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                                                     </div>
                                                     <div style={{ flex: 1 }}>
-                                                        <h4 style={{ margin: '0 0 5px 0', fontSize: '1rem' }}>{item.name}</h4>
+                                                        <h4 style={{ margin: '0 0 2px 0', fontSize: '1rem' }}>{item.name}</h4>
+                                                        <div style={{ fontSize: '0.7rem', opacity: 0.6, textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '4px' }}>
+                                                            {item.type === 'course' ? 'Curso' : item.type === 'physical' ? 'Físico' : 'Digital'}
+                                                        </div>
                                                         <span style={{ fontWeight: '700', color: 'var(--primary-color)' }}>${(item.price * item.quantity).toLocaleString()}</span>
                                                     </div>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '4px' }}>
-                                                        <button onClick={() => updateQuantity(item.id, item.quantity - 1)} style={{ padding: '4px', background: 'transparent' }}><Minus size={14} /></button>
-                                                        <span style={{ fontWeight: 'bold', width: '20px', textAlign: 'center' }}>{item.quantity}</span>
-                                                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)} style={{ padding: '4px', background: 'transparent' }}><Plus size={14} /></button>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); removeFromCart(item.id); }}
+                                                            style={{ background: 'transparent', color: '#ef4444', padding: '4px', opacity: 0.7 }}
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '4px' }}>
+                                                            <button onClick={() => updateQuantity(item.id, item.quantity - 1)} style={{ padding: '4px', background: 'transparent' }}><Minus size={12} /></button>
+                                                            <span style={{ fontWeight: 'bold', width: '20px', textAlign: 'center', fontSize: '0.9rem' }}>{item.quantity}</span>
+                                                            <button onClick={() => updateQuantity(item.id, item.quantity + 1)} style={{ padding: '4px', background: 'transparent' }}><Plus size={12} /></button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))
@@ -458,6 +472,111 @@ const PublicStorefront = () => {
                     </>
                 )}
             </AnimatePresence>
+
+            {/* Product Detail Modal */}
+            <AnimatePresence>
+                {selectedProduct && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setSelectedProduct(null)}
+                            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', zIndex: 1100 }}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="glass-panel"
+                            style={{
+                                position: 'fixed',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                width: 'min(90%, 800px)',
+                                maxHeight: '90vh',
+                                zIndex: 1101,
+                                padding: 0,
+                                overflow: 'hidden',
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))'
+                            }}
+                        >
+                            <button
+                                onClick={() => setSelectedProduct(null)}
+                                style={{ position: 'absolute', top: '20px', right: '20px', zIndex: 1102, background: 'rgba(0,0,0,0.5)', borderRadius: '50%', padding: '8px', color: 'white' }}
+                            >
+                                <X size={24} />
+                            </button>
+
+                            <div style={{ background: '#000', height: '400px' }}>
+                                {selectedProduct.image_url ? (
+                                    <img src={selectedProduct.image_url} alt={selectedProduct.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.3, color: 'white' }}>
+                                        <Package size={80} />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div style={{ padding: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', overflowY: 'auto' }}>
+                                <div>
+                                    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                                        <span style={{ padding: '4px 12px', borderRadius: '20px', background: 'var(--primary-color)22', color: 'var(--primary-color)', fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase' }}>
+                                            {selectedProduct.type}
+                                        </span>
+                                        {selectedProduct.category && (
+                                            <span style={{ padding: '4px 12px', borderRadius: '20px', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase' }}>
+                                                {selectedProduct.category}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <h2 style={{ fontSize: '2rem', fontWeight: '900', margin: 0 }}>{selectedProduct.name}</h2>
+                                </div>
+
+                                <p style={{ fontSize: '1.1rem', opacity: 0.7, lineHeight: '1.6', margin: 0 }}>
+                                    {selectedProduct.description || 'No hay una descripción detallada para este producto.'}
+                                </p>
+
+                                <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        {selectedProduct.discount_price ? (
+                                            <>
+                                                <span style={{ fontSize: '1rem', opacity: 0.5, textDecoration: 'line-through' }}>
+                                                    ${selectedProduct.price.toLocaleString()}
+                                                </span>
+                                                <span style={{ fontSize: '2.5rem', fontWeight: '900', color: '#ef4444' }}>
+                                                    ${selectedProduct.discount_price.toLocaleString()}
+                                                </span>
+                                            </>
+                                        ) : (
+                                            <span style={{ fontSize: '2.5rem', fontWeight: '900', color: 'var(--primary-color)' }}>
+                                                ${selectedProduct.price.toLocaleString()}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            addToCart({
+                                                ...selectedProduct,
+                                                price: selectedProduct.discount_price || selectedProduct.price
+                                            });
+                                            toast.success(`Añadido: ${selectedProduct.name}`);
+                                        }}
+                                        disabled={selectedProduct.stock <= 0}
+                                        className="btn-primary"
+                                        style={{ padding: '15px 30px', borderRadius: '14px', fontSize: '1.1rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px' }}
+                                    >
+                                        {selectedProduct.stock <= 0 ? 'Sin Stock' : <><Plus size={22} /> Añadir al Carrito</>}
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+
         </div>
     );
 };
