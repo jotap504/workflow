@@ -239,7 +239,7 @@ const PublicStorefront = () => {
                 position: 'sticky',
                 top: 0,
                 zIndex: 100,
-                padding: '1rem 2rem',
+                padding: window.innerWidth < 768 ? '0.8rem 1rem' : '1rem 2rem',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -257,7 +257,7 @@ const PublicStorefront = () => {
                     <h1 style={{ fontSize: '1.5rem', margin: 0, fontWeight: '800' }}>{settings.shop_name}</h1>
                 </div>
 
-                <nav style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+                <nav className="desktop-nav" style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
                     <button
                         onClick={() => scrollToSection('shop')}
                         style={{ background: 'transparent', fontWeight: activeSection === 'shop' ? '700' : '500', color: activeSection === 'shop' ? 'var(--primary-color)' : 'inherit', border: 'none', cursor: 'pointer', fontSize: '0.95rem' }}
@@ -298,7 +298,7 @@ const PublicStorefront = () => {
                     )}
                 </nav>
 
-                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: window.innerWidth < 768 ? '0.5rem' : '1.5rem', alignItems: 'center' }}>
                     {user ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                             <div style={{ textAlign: 'right', display: 'none', sm: 'block' }}>
@@ -337,7 +337,7 @@ const PublicStorefront = () => {
                         style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '10px', position: 'relative' }}
                     >
                         <ShoppingCart size={20} />
-                        <span style={{ fontWeight: '600' }}>Carrito</span>
+                        <span style={{ fontWeight: '600', display: window.innerWidth < 768 ? 'none' : 'block' }}>Carrito</span>
                         {cartCount > 0 && (
                             <span style={{
                                 position: 'absolute',
@@ -361,14 +361,14 @@ const PublicStorefront = () => {
                 </div>
             </header>
 
-            <main className="container" style={{ padding: '3rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '6rem' }}>
+            <main className="container" style={{ padding: window.innerWidth < 768 ? '2rem 1rem' : '3rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '4rem' }}>
                 {/* Shop Section */}
                 <section id="shop">
                     <div style={{
-                        marginBottom: '4rem',
+                        marginBottom: '3rem',
                         textAlign: 'center',
-                        padding: '5rem 2rem',
-                        borderRadius: '30px',
+                        padding: window.innerWidth < 768 ? '3rem 1.5rem' : '5rem 2rem',
+                        borderRadius: window.innerWidth < 768 ? '15px' : '30px',
                         background: settings.banner_url ? `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url(${settings.banner_url})` : 'rgba(255,255,255,0.02)',
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
@@ -521,7 +521,7 @@ const PublicStorefront = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, margin: "-100px" }}
                         className="glass-panel"
-                        style={{ padding: '4rem', maxWidth: '1000px', margin: '0 auto', width: '100%' }}
+                        style={{ padding: window.innerWidth < 768 ? '2rem 1.5rem' : '4rem', maxWidth: '1000px', margin: '0 auto', width: '100%' }}
                     >
                         <h2 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '15px' }}>
                             <Heart className="text-primary" /> Quiénes Somos
@@ -540,7 +540,7 @@ const PublicStorefront = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, margin: "-100px" }}
                         className="glass-panel"
-                        style={{ padding: '4rem', maxWidth: '1000px', margin: '0 auto', width: '100%' }}
+                        style={{ padding: window.innerWidth < 768 ? '2rem 1.5rem' : '4rem', maxWidth: '1000px', margin: '0 auto', width: '100%' }}
                     >
                         <h2 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '15px' }}>
                             <BookOpen className="text-primary" /> Historias y Comunidad
@@ -559,7 +559,7 @@ const PublicStorefront = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, margin: "-100px" }}
                         className="glass-panel"
-                        style={{ padding: '4rem', maxWidth: '1000px', margin: '0 auto', width: '100%' }}
+                        style={{ padding: window.innerWidth < 768 ? '2rem 1.5rem' : '4rem', maxWidth: '1000px', margin: '0 auto', width: '100%' }}
                     >
                         <h2 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '15px' }}>
                             <HelpCircle className="text-primary" /> Proceso de Compra
@@ -578,7 +578,7 @@ const PublicStorefront = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, margin: "-100px" }}
                         className="glass-panel"
-                        style={{ padding: '4rem', maxWidth: '800px', margin: '0 auto', textAlign: 'center', width: '100%' }}
+                        style={{ padding: window.innerWidth < 768 ? '2rem 1.5rem' : '4rem', maxWidth: '800px', margin: '0 auto', textAlign: 'center', width: '100%' }}
                     >
                         <h2 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '2rem' }}>Ponte en Contacto</h2>
                         <p style={{ opacity: 0.7, marginBottom: '3rem' }}>¿Tienes alguna duda o necesitas asesoramiento? Estamos aquí para ayudarte.</p>
@@ -623,7 +623,7 @@ const PublicStorefront = () => {
             </main>
 
             {/* Footer Section */}
-            <footer className="glass-panel" style={{ marginTop: '5rem', padding: '4rem 2rem', borderRadius: '40px 40px 0 0', borderBottom: 'none' }}>
+            <footer className="glass-panel" style={{ marginTop: '5rem', padding: window.innerWidth < 768 ? '3rem 1.5rem' : '4rem 2rem', borderRadius: '40px 40px 0 0', borderBottom: 'none' }}>
                 <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '3rem' }}>
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.5rem' }}>
