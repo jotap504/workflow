@@ -22,6 +22,24 @@ router.post('/', verifyToken, upload.single('file'), async (req, res) => {
         }
 
         const fileName = `${Date.now()}_${req.file.originalname.replace(/\s+/g, '_')}`;
+        const formData = new URLSearchParams();
+
+        // High priority: ImgBB if API key provided
+        if (process.env.IMGBB_API_KEY) {
+            try {
+                formData.append('image', req.file.buffer.toString('base64'));
+                const imgbbResponse = await fetch(`https://api.imgbb.com/1/upload?key=${process.env.IMGBB_API_KEY}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const imgbbData = await imgbbResponse.json();
+                if (imgbbData.success) {
+                    return res.json({ url: imgbbData.data.url });
+                }
+            } catch (err) {
+                console.error('[UPLOAD] ImgBB failed:', err.message);
+            }
+        }
 
         if (db.isFirebase) {
             // Firebase Storage Upload
