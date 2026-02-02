@@ -28,9 +28,9 @@ router.get('/', async (req, res) => {
             // 3. Fetch Category and Creator names (Manual Join)
             const enrichedTasks = await Promise.all(tasks.map(async t => {
                 const [catDoc, userDoc, clientDoc, notesSnap] = await Promise.all([
-                    t.category_id ? db.collection('categories').doc(t.category_id).get() : null,
-                    t.created_by ? db.collection('users').doc(t.created_by).get() : null,
-                    t.client_id ? db.collection('hub_clients').doc(t.client_id).get() : null,
+                    (t.category_id && t.category_id !== "") ? db.collection('categories').doc(t.category_id).get() : null,
+                    (t.created_by && t.created_by !== "") ? db.collection('users').doc(t.created_by).get() : null,
+                    (t.client_id && t.client_id !== "") ? db.collection('hub_clients').doc(t.client_id).get() : null,
                     db.collection('task_notes').where('task_id', '==', t.id).get()
                 ]);
 
@@ -72,10 +72,12 @@ router.get('/', async (req, res) => {
                 c.name AS category_name, 
                 c.color AS category_color, 
                 u.username AS creator_name,
+                cl.name AS client_name,
                 (SELECT COUNT(*) FROM task_notes WHERE task_id = t.id) AS note_count
             FROM tasks t
             LEFT JOIN categories c ON t.category_id = c.id
             LEFT JOIN users u ON t.created_by = u.id
+            LEFT JOIN hub_clients cl ON t.client_id = cl.id
         `;
         let params = [];
 
@@ -136,7 +138,8 @@ router.post('/', upload.single('attachment'), async (req, res) => {
                 created_by: req.userId, recurrence: recurrence || 'none',
                 is_recurring_parent: isParent,
                 status: 'pending',
-                client_id: client_id || null,
+                client_id: (client_id && client_id !== "") ? client_id : null,
+                category_id: (category_id && category_id !== "") ? category_id : null,
                 created_at: new Date().toISOString()
             };
 
@@ -169,8 +172,11 @@ router.post('/', upload.single('attachment'), async (req, res) => {
                 }
             }
 
-            req.app.get('io').emit('tasks_updated');
-            req.app.get('io').emit('new_task', { title, creator: req.userName || 'Usuario' });
+            const io = req.app.get('io');
+            if (io) {
+                io.emit('tasks_updated');
+                io.emit('new_task', { title, creator: req.userName || 'Usuario' });
+            }
             return res.json({ id: parentId, message: 'Task created successfully', attachment_url });
         } catch (err) {
             console.error('[TASK CREATE ERROR]', err);
@@ -193,10 +199,10 @@ router.post('/', upload.single('attachment'), async (req, res) => {
         }
 
         function proceedToCreate() {
-            const sql = `INSERT INTO tasks (title, description, urgency, category_id, due_date, attachment_url, created_by, recurrence, is_recurring_parent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            const sql = `INSERT INTO tasks (title, description, urgency, category_id, due_date, attachment_url, created_by, recurrence, is_recurring_parent, client_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
             const isParent = recurrence && recurrence !== 'none' ? 1 : 0;
 
-            db.run(sql, [title, description, urgency || 'medium', category_id, due_date, attachment_url, req.userId, recurrence || 'none', isParent], function (err) {
+            db.run(sql, [title, description, urgency || 'medium', category_id, due_date, attachment_url, req.userId, recurrence || 'none', isParent, client_id || null], function (err) {
                 if (err) return res.status(500).json({ error: err.message });
                 const parentId = this.lastID;
 
@@ -207,7 +213,7 @@ router.post('/', upload.single('attachment'), async (req, res) => {
                     limitDate.setFullYear(limitDate.getFullYear() + 2);
 
                     let currentDate = new Date(startDate);
-                    const batchSql = `INSERT INTO tasks (title, description, urgency, category_id, created_by, due_date, recurrence, parent_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`;
+                    const batchSql = `INSERT INTO tasks (title, description, urgency, category_id, created_by, due_date, recurrence, parent_id, status, client_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`;
 
                     const generateNext = () => {
                         if (recurrence === 'daily') currentDate.setDate(currentDate.getDate() + 1);
@@ -215,7 +221,7 @@ router.post('/', upload.single('attachment'), async (req, res) => {
                         else if (recurrence === 'monthly') currentDate.setMonth(currentDate.getMonth() + 1);
 
                         if (currentDate <= limitDate) {
-                            db.run(batchSql, [title, description, urgency || 'medium', category_id, req.userId, currentDate.toISOString(), recurrence, parentId], (err) => {
+                            db.run(batchSql, [title, description, urgency || 'medium', category_id, req.userId, currentDate.toISOString(), recurrence, parentId, client_id || null], (err) => {
                                 if (!err) generateNext();
                             });
                         }
@@ -223,12 +229,11 @@ router.post('/', upload.single('attachment'), async (req, res) => {
                     generateNext();
                 }
 
-                req.app.get('io').emit('tasks_updated');
-                console.log(`[DEBUG] Emitting new_task: title="${title}", creator="${req.userName || 'Usuario'}"`);
-                req.app.get('io').emit('new_task', {
-                    title: title,
-                    creator: req.userName || 'Usuario'
-                });
+                const io = req.app.get('io');
+                if (io) {
+                    io.emit('tasks_updated');
+                    io.emit('new_task', { title, creator: req.userName || 'Usuario' });
+                }
                 res.json({ id: parentId, message: 'Task created successfully', attachment_url });
             });
         }
@@ -304,11 +309,12 @@ router.put('/:id', async (req, res) => {
                 urgency = COALESCE(?, urgency), 
                 status = COALESCE(?, status), 
                 category_id = COALESCE(?, category_id),
-                due_date = COALESCE(?, due_date)
+                due_date = COALESCE(?, due_date),
+                client_id = COALESCE(?, client_id)
             WHERE id = ?
         `;
 
-        db.run(sql, [title, description, urgency, status, category_id, due_date, taskId], function (err) {
+        db.run(sql, [title, description, urgency, status, category_id, due_date, client_id, taskId], function (err) {
             if (err) return res.status(500).json({ error: err.message });
             if (this.changes === 0) return res.status(404).json({ error: 'Task not found' });
 

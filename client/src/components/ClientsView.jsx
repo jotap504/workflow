@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -22,6 +23,7 @@ const ClientsView = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [showForm, setShowForm] = useState(false);
     const [editingClient, setEditingClient] = useState(null);
+    const navigate = useNavigate();
 
     // Form State
     const [formData, setFormData] = useState({
@@ -35,7 +37,10 @@ const ClientsView = () => {
 
     const fetchClients = async () => {
         try {
-            const res = await fetch('/api/clients');
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/clients', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (res.ok) {
                 const data = await res.json();
                 setClients(data);
@@ -58,9 +63,13 @@ const ClientsView = () => {
         }
 
         try {
+            const token = localStorage.getItem('token');
             const res = await fetch('/api/clients', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(editingClient ? { ...formData, id: editingClient.id } : formData)
             });
 
@@ -92,7 +101,11 @@ const ClientsView = () => {
     const handleDelete = async (id) => {
         if (!confirm('¿Estás seguro de eliminar este contacto?')) return;
         try {
-            const res = await fetch(`/api/clients/${id}`, { method: 'DELETE' });
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/clients/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (res.ok) {
                 toast.success('Contacto eliminado');
                 fetchClients();
@@ -277,7 +290,25 @@ const ClientsView = () => {
                             </div>
                         )}
 
-                        <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
+                        <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <button
+                                onClick={() => navigate(`/?client_id=${client.id}`)}
+                                style={{
+                                    background: 'var(--primary-color)15',
+                                    color: 'var(--primary-color)',
+                                    border: 'none',
+                                    padding: '6px 12px',
+                                    borderRadius: '10px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '5px'
+                                }}
+                            >
+                                <Plus size={14} /> Nueva Tarea
+                            </button>
                             <span style={{ fontSize: '0.7rem', opacity: 0.3 }}>Actualizado: {new Date(client.updated_at).toLocaleDateString()}</span>
                         </div>
                     </motion.div>

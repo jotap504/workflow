@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Paperclip, Calendar as CalendarIcon, Flag, Plus, MessageSquare, X, Send, ChevronDown, ChevronRight, Play, Check, RotateCcw, History, Users } from 'lucide-react';
+import { Paperclip, Calendar as CalendarIcon, Flag, Plus, MessageSquare, X, Send, ChevronDown, ChevronRight, Play, Check, RotateCcw, History, Users, Mail, Phone } from 'lucide-react';
 import { io } from 'socket.io-client';
 
 // Standard socket initialization with explicit URL for dev
@@ -29,7 +30,9 @@ const TaskBoard = ({ searchQuery = '' }) => {
     const [clients, setClients] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+    const [selectedClientId, setSelectedClientId] = useState(null);
     const [showOnlyMine, setShowOnlyMine] = useState(false);
+    const location = useLocation();
     const { user } = useAuth();
     const [newTask, setNewTask] = useState({
         title: '',
@@ -60,7 +63,7 @@ const TaskBoard = ({ searchQuery = '' }) => {
             const [tasksRes, catsRes, clientsRes] = await Promise.all([
                 fetch('/api/tasks', { headers }),
                 fetch('/api/categories', { headers }),
-                fetch('/api/clients')
+                fetch('/api/clients', { headers })
             ]);
             if (tasksRes.ok) setTasks(await tasksRes.json());
             if (catsRes.ok) {
@@ -79,6 +82,18 @@ const TaskBoard = ({ searchQuery = '' }) => {
             setLoading(false);
         }
     };
+
+    // Handle Client Pre-selection from URL
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const clientId = params.get('client_id');
+        if (clientId) {
+            setNewTask(prev => ({ ...prev, client_id: clientId }));
+            setShowTaskForm(true);
+            // Optionally clear the query param to avoid re-opening on refresh? 
+            // For now, let's keep it simple.
+        }
+    }, [location.search]);
 
     const fetchNotes = async (taskId) => {
         setLoadingNotes(true);
@@ -227,9 +242,10 @@ const TaskBoard = ({ searchQuery = '' }) => {
             (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase()));
 
         const matchesCategory = !selectedCategoryId || t.category_id == selectedCategoryId;
+        const matchesClient = !selectedClientId || t.client_id == selectedClientId;
         const matchesMine = !showOnlyMine || t.created_by === user?.id;
 
-        return matchesSearch && matchesCategory && matchesMine;
+        return matchesSearch && matchesCategory && matchesClient && matchesMine;
     });
 
     const columns = {
@@ -280,6 +296,24 @@ const TaskBoard = ({ searchQuery = '' }) => {
                             {cat.name}
                         </button>
                     ))}
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                    <select
+                        value={selectedClientId || ''}
+                        onChange={(e) => setSelectedClientId(e.target.value || null)}
+                        style={{
+                            background: selectedClientId ? 'var(--primary-color)' : 'rgba(255,255,255,0.05)',
+                            color: 'white',
+                            border: '1px solid var(--card-border)',
+                            borderRadius: '20px', padding: '4px 12px', fontSize: '0.75rem', cursor: 'pointer', outline: 'none'
+                        }}
+                    >
+                        <option value="">Todos los Clientes</option>
+                        {clients.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
                 </div>
 
                 <button
@@ -598,6 +632,29 @@ const TaskBoard = ({ searchQuery = '' }) => {
                                     <div style={{ padding: '1.2rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
                                         <h5 style={{ margin: '0 0 8px 0', fontSize: '0.75rem', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em' }}>Descripción</h5>
                                         <p style={{ margin: 0, fontSize: '1rem', lineHeight: '1.6', color: '#334155' }}>{selectedTask.description}</p>
+                                    </div>
+                                )}
+
+                                {selectedTask.client_id && (
+                                    <div style={{ padding: '1.2rem', background: 'var(--primary-color)08', borderRadius: '12px', border: '1px solid var(--primary-color)22' }}>
+                                        <h5 style={{ margin: '0 0 8px 0', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--primary-color)', letterSpacing: '0.05em' }}>Información del Cliente</h5>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            <div style={{ fontWeight: '600', fontSize: '1rem' }}>{selectedTask.client_name}</div>
+                                            {clients.find(c => c.id == selectedTask.client_id) && (
+                                                <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', fontSize: '0.9rem', opacity: 0.8 }}>
+                                                    {clients.find(c => c.id == selectedTask.client_id).email && (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                            <Mail size={14} /> {clients.find(c => c.id == selectedTask.client_id).email}
+                                                        </div>
+                                                    )}
+                                                    {clients.find(c => c.id == selectedTask.client_id).phone && (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                            <Phone size={14} /> {clients.find(c => c.id == selectedTask.client_id).phone}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
 

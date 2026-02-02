@@ -90,6 +90,19 @@ function initDB() {
       color TEXT DEFAULT '#6366f1'
     )`);
 
+        // Hub Clients Table (Local Mirror)
+        db.run(`CREATE TABLE IF NOT EXISTS hub_clients (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT,
+      phone TEXT,
+      contactName TEXT,
+      socialMedia TEXT,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
         // Tasks Table
         db.run(`CREATE TABLE IF NOT EXISTS tasks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -104,6 +117,7 @@ function initDB() {
       recurrence TEXT DEFAULT 'none', -- none, daily, weekly, monthly
       is_recurring_parent BOOLEAN DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      client_id TEXT,
       FOREIGN KEY(category_id) REFERENCES categories(id),
       FOREIGN KEY(created_by) REFERENCES users(id)
     )`);
@@ -152,6 +166,11 @@ function initDB() {
         db.run(`ALTER TABLE tasks ADD COLUMN parent_id INTEGER`, (err) => {
             if (err && !err.message.includes('duplicate column name')) {
                 console.error('Migration error (parent_id):', err.message);
+            }
+        });
+        db.run(`ALTER TABLE tasks ADD COLUMN client_id TEXT`, (err) => {
+            if (err && !err.message.includes('duplicate column name')) {
+                console.error('Migration error (client_id):', err.message);
             }
         });
 
