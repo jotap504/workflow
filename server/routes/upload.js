@@ -25,6 +25,7 @@ router.post('/', verifyToken, upload.single('file'), async (req, res) => {
         const formData = new URLSearchParams();
 
         // High priority: ImgBB if API key provided
+        console.log('[DEBUG UPLOAD] IMGBB_API_KEY present:', !!process.env.IMGBB_API_KEY);
         if (process.env.IMGBB_API_KEY) {
             try {
                 formData.append('image', req.file.buffer.toString('base64'));
