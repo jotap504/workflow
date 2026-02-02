@@ -10,29 +10,62 @@ router.post('/checkout', verifyToken, (req, res) => {
     if (!items || items.length === 0) return res.status(400).json({ error: 'El carrito está vacío' });
 
     db.serialize(() => {
-        // 1. Create Order
-        const orderQuery = `INSERT INTO orders (user_id, customer_email, customer_name, total_amount, status) 
-                           VALUES (?, ?, ?, ?, 'paid')`; // Auto-pay for simulation
+        // 1. Validate Stock for all items first
+        let stockError = null;
+        const checkStock = (index) => {
+            if (index >= items.length) {
+                if (stockError) return res.status(400).json({ error: stockError });
+                proceedWithOrder();
+                return;
+            }
 
-        db.run(orderQuery, [req.userId, customer_email, customer_name, total_amount], function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-
-            const orderId = this.lastID;
-
-            // 2. Add Order Items and Grant Access to Digital Content
-            items.forEach(item => {
-                db.run('INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (?, ?, ?, ?)',
-                    [orderId, item.id, item.quantity, item.price]);
-
-                // If it's a course or virtual, grant access automatically
-                if (item.type === 'course' || item.type === 'virtual') {
-                    db.run('INSERT OR IGNORE INTO product_access (user_id, product_id) VALUES (?, ?)',
-                        [req.userId, item.id]);
+            const item = items[index];
+            db.get('SELECT stock, type FROM products WHERE id = ?', [item.id], (err, row) => {
+                if (err) {
+                    stockError = err.message;
+                    checkStock(items.length); // Jump to end
+                } else if (!row) {
+                    stockError = `Producto ${item.id} no encontrado`;
+                    checkStock(items.length);
+                } else if (row.type === 'physical' && row.stock < item.quantity) {
+                    stockError = `Stock insuficiente para ${item.name}`;
+                    checkStock(items.length);
+                } else {
+                    checkStock(index + 1);
                 }
             });
+        };
 
-            res.status(201).json({ orderId, message: 'Pedido procesado con éxito' });
-        });
+        const proceedWithOrder = () => {
+            // 2. Create Order
+            const orderQuery = `INSERT INTO orders (user_id, customer_email, customer_name, total_amount, status) 
+                               VALUES (?, ?, ?, ?, 'paid')`;
+
+            db.run(orderQuery, [req.userId, customer_email, customer_name, total_amount], function (err) {
+                if (err) return res.status(500).json({ error: err.message });
+
+                const orderId = this.lastID;
+
+                // 3. Add Order Items, Grant Access, and Deduct Stock
+                items.forEach(item => {
+                    db.run('INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (?, ?, ?, ?)',
+                        [orderId, item.id, item.quantity, item.price]);
+
+                    // Deduct stock if physical
+                    db.run('UPDATE products SET stock = stock - ? WHERE id = ? AND type = "physical"', [item.quantity, item.id]);
+
+                    // If it's a course or virtual, grant access automatically
+                    if (item.type === 'course' || item.type === 'virtual') {
+                        db.run('INSERT OR IGNORE INTO product_access (user_id, product_id) VALUES (?, ?)',
+                            [req.userId, item.id]);
+                    }
+                });
+
+                res.status(201).json({ orderId, message: 'Pedido procesado con éxito' });
+            });
+        };
+
+        checkStock(0);
     });
 });
 
@@ -51,6 +84,20 @@ router.get('/my-content', verifyToken, (req, res) => {
         SELECT p.* FROM products p
         JOIN product_access pa ON p.id = pa.product_id
         WHERE pa.user_id = ?
+    `;
+    db.all(query, [req.userId], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+});
+
+// GET: User's order history
+router.get('/my-orders', verifyToken, (req, res) => {
+    const query = `
+        SELECT o.*, (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) as item_count 
+        FROM orders o 
+        WHERE o.user_id = ? 
+        ORDER BY o.created_at DESC
     `;
     db.all(query, [req.userId], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });

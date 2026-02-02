@@ -23,7 +23,7 @@ const HubView = () => {
             description: 'Venta de productos físicos y contenido digital.',
             icon: <ShoppingCart size={32} />,
             color: '#ec4899',
-            path: '/'
+            path: '/shop'
         },
         {
             id: 'accounting',

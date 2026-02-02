@@ -164,6 +164,9 @@ function initDB() {
             image_url TEXT,
             category TEXT,
             active BOOLEAN DEFAULT 1,
+            stock INTEGER DEFAULT 10,
+            discount_price REAL,
+            meta_features TEXT, -- JSON string for dynamic features
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`);
 
@@ -225,6 +228,23 @@ function initDB() {
             }
         });
 
+        // --- Products Migrations ---
+        db.run(`ALTER TABLE products ADD COLUMN stock INTEGER DEFAULT 10`, (err) => {
+            if (err && !err.message.includes('duplicate column name')) {
+                console.error('Migration error (product stock):', err.message);
+            }
+        });
+        db.run(`ALTER TABLE products ADD COLUMN discount_price REAL`, (err) => {
+            if (err && !err.message.includes('duplicate column name')) {
+                console.error('Migration error (product discount_price):', err.message);
+            }
+        });
+        db.run(`ALTER TABLE products ADD COLUMN meta_features TEXT`, (err) => {
+            if (err && !err.message.includes('duplicate column name')) {
+                console.error('Migration error (product meta_features):', err.message);
+            }
+        });
+
         // Basic Seed for Categories if empty
         db.get("SELECT count(*) as count FROM categories", [], (err, row) => {
             if (row && row.count === 0) {
@@ -249,6 +269,63 @@ function initDB() {
                     if (err) console.error('Error seeding admin user:', err.message);
                     else console.log('Admin user seeded (admin / admin123)');
                 });
+            }
+        });
+
+        // Basic Seed for Products if empty
+        db.get("SELECT count(*) as count FROM products", [], (err, row) => {
+            if (row && row.count === 0) {
+                const products = [
+                    {
+                        name: 'Matcha Ceremonial Orgánico',
+                        description: 'Matcha de grado ceremonial premium proveniente de Uji, Japón. Sabor suave, umami vibrante y color verde intenso.',
+                        price: 45000,
+                        type: 'physical',
+                        image_url: '/products/matcha.png',
+                        category: 'Matcha'
+                    },
+                    {
+                        name: 'Batidor de Bambú (Chasen)',
+                        description: 'Batidor artesanal de bambú con 100 cerdas finas, esencial para lograr la espuma perfecta en tu matcha.',
+                        price: 15000,
+                        type: 'physical',
+                        image_url: '/products/whisk.png',
+                        category: 'Accesorios'
+                    },
+                    {
+                        name: 'Cuenco de Cerámica (Chawan)',
+                        description: 'Cuenco artesanal de cerámica diseñado específicamente para la preparación y el disfrute del matcha.',
+                        price: 28000,
+                        type: 'physical',
+                        image_url: '/products/bowl.png',
+                        category: 'Accesorios'
+                    },
+                    {
+                        name: 'Té Verde Sencha Premium',
+                        description: 'Hojas de té verde Sencha de primera cosecha. Un clásico japonés con notas herbales y refrescantes.',
+                        price: 12000,
+                        type: 'physical',
+                        image_url: '/products/sencha.png',
+                        category: 'Té en Hebras'
+                    },
+                    {
+                        name: 'Espumador Eléctrico Premium',
+                        description: 'Espumador de leche de acero inoxidable de alta potencia para preparar lattes de matcha cremosos en segundos.',
+                        price: 18500,
+                        type: 'physical',
+                        image_url: '/products/frother.png',
+                        category: 'Accesorios'
+                    }
+                ];
+
+                products.forEach((p) => {
+                    db.run(`INSERT INTO products (name, description, price, type, image_url, category) 
+                           VALUES (?, ?, ?, ?, ?, ?)`,
+                        [p.name, p.description, p.price, p.type, p.image_url, p.category], (err) => {
+                            if (err) console.error("Error seeding products:", err.message);
+                        });
+                });
+                console.log("Seeded example products.");
             }
         });
     });

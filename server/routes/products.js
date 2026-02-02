@@ -32,13 +32,13 @@ router.get('/:id', (req, res) => {
 
 // Admin: Create product
 router.post('/', verifyToken, isAdmin, (req, res) => {
-    const { name, description, price, type, image_url, category } = req.body;
+    const { name, description, price, type, image_url, category, stock, discount_price, meta_features } = req.body;
     if (!name || !price) return res.status(400).json({ error: 'Nombre y precio son obligatorios' });
 
-    const query = `INSERT INTO products (name, description, price, type, image_url, category) 
-                  VALUES (?, ?, ?, ?, ?, ?)`;
+    const query = `INSERT INTO products (name, description, price, type, image_url, category, stock, discount_price, meta_features) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    db.run(query, [name, description, price, type || 'physical', image_url, category], function (err) {
+    db.run(query, [name, description, price, type || 'physical', image_url, category, stock || 10, discount_price, meta_features], function (err) {
         if (err) return res.status(500).json({ error: err.message });
         res.status(201).json({ id: this.lastID, message: 'Producto creado exitosamente' });
     });
@@ -46,7 +46,7 @@ router.post('/', verifyToken, isAdmin, (req, res) => {
 
 // Admin: Update product
 router.put('/:id', verifyToken, isAdmin, (req, res) => {
-    const { name, description, price, type, image_url, category, active } = req.body;
+    const { name, description, price, type, image_url, category, active, stock, discount_price, meta_features } = req.body;
     const query = `UPDATE products SET 
                   name = COALESCE(?, name),
                   description = COALESCE(?, description),
@@ -54,10 +54,13 @@ router.put('/:id', verifyToken, isAdmin, (req, res) => {
                   type = COALESCE(?, type),
                   image_url = COALESCE(?, image_url),
                   category = COALESCE(?, category),
-                  active = COALESCE(?, active)
+                  active = COALESCE(?, active),
+                  stock = COALESCE(?, stock),
+                  discount_price = COALESCE(?, discount_price),
+                  meta_features = COALESCE(?, meta_features)
                   WHERE id = ?`;
 
-    db.run(query, [name, description, price, type, image_url, category, active, req.params.id], function (err) {
+    db.run(query, [name, description, price, type, image_url, category, active, stock, discount_price, meta_features, req.params.id], function (err) {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ message: 'Producto actualizado' });
     });

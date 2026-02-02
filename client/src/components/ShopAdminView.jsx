@@ -14,7 +14,10 @@ const ShopAdminView = () => {
         price: '',
         type: 'physical',
         image_url: '',
-        category: ''
+        category: '',
+        stock: 10,
+        discount_price: '',
+        meta_features: ''
     });
 
     const fetchProducts = async () => {
@@ -53,7 +56,7 @@ const ShopAdminView = () => {
 
             if (response.ok) {
                 toast.success(editingProduct ? 'Producto actualizado' : 'Producto creado');
-                setFormData({ name: '', description: '', price: '', type: 'physical', image_url: '', category: '' });
+                setFormData({ name: '', description: '', price: '', type: 'physical', image_url: '', category: '', stock: 10, discount_price: '', meta_features: '' });
                 setShowForm(false);
                 setEditingProduct(null);
                 fetchProducts();
@@ -73,7 +76,10 @@ const ShopAdminView = () => {
             price: product.price,
             type: product.type,
             image_url: product.image_url || '',
-            category: product.category || ''
+            category: product.category || '',
+            stock: product.stock,
+            discount_price: product.discount_price || '',
+            meta_features: product.meta_features || ''
         });
         setShowForm(true);
     };
@@ -117,7 +123,7 @@ const ShopAdminView = () => {
                     <button
                         onClick={() => {
                             setEditingProduct(null);
-                            setFormData({ name: '', description: '', price: '', type: 'physical', image_url: '', category: '' });
+                            setFormData({ name: '', description: '', price: '', type: 'physical', image_url: '', category: '', stock: 10, discount_price: '', meta_features: '' });
                             setShowForm(!showForm);
                         }}
                         className="btn-primary"
@@ -157,6 +163,26 @@ const ShopAdminView = () => {
                                     className="glass-input"
                                     value={formData.price}
                                     onChange={e => setFormData({ ...formData, price: e.target.value })}
+                                    style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--card-border)', color: 'white' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', opacity: 0.7, marginBottom: '6px' }}>Precio con Descuento (Opcional)</label>
+                                <input
+                                    type="number"
+                                    className="glass-input"
+                                    value={formData.discount_price}
+                                    onChange={e => setFormData({ ...formData, discount_price: e.target.value })}
+                                    style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--card-border)', color: 'white' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', opacity: 0.7, marginBottom: '6px' }}>Stock Disponible</label>
+                                <input
+                                    type="number"
+                                    className="glass-input"
+                                    value={formData.stock}
+                                    onChange={e => setFormData({ ...formData, stock: e.target.value })}
                                     style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--card-border)', color: 'white' }}
                                 />
                             </div>
@@ -260,8 +286,15 @@ const ShopAdminView = () => {
                                 <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--primary-color)' }}>
                                     ${product.price.toLocaleString()}
                                 </span>
-                                <div style={{ display: 'flex', gap: '10px' }}>
+                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                                     {!product.active && <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 'bold' }}>INACTIVO</span>}
+                                    {product.stock <= 0 ? (
+                                        <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 'bold', background: '#ef444411', padding: '2px 6px', borderRadius: '4px' }}>SIN STOCK</span>
+                                    ) : product.stock < 5 ? (
+                                        <span style={{ fontSize: '0.7rem', color: '#f59e0b', fontWeight: 'bold' }}>STOCK BAJO: {product.stock}</span>
+                                    ) : (
+                                        <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>Stock: {product.stock}</span>
+                                    )}
                                     <Activity size={18} style={{ opacity: 0.3 }} />
                                 </div>
                             </div>

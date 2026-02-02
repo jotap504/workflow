@@ -10,7 +10,7 @@ const PublicStorefront = () => {
     const [loading, setLoading] = useState(true);
     const { cart, addToCart, removeFromCart, updateQuantity, cartTotal, cartCount, clearCart } = useCart();
     const [isCartOpen, setIsCartOpen] = useState(false);
-    const [checkoutStep, setCheckoutStep] = useState('cart'); // cart, info, success
+    const [checkoutStep, setCheckoutStep] = useState('cart'); // cart, info, payment, success
     const [customerData, setCustomerData] = useState({ name: '', email: '' });
     const navigate = useNavigate();
 
@@ -177,6 +177,39 @@ const PublicStorefront = () => {
                                 }}>
                                     {product.type === 'course' ? 'Curso' : product.type === 'physical' ? 'Físico' : 'Digital'}
                                 </div>
+                                {product.discount_price && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '10px',
+                                        left: '10px',
+                                        padding: '5px 12px',
+                                        borderRadius: '20px',
+                                        background: '#ef4444',
+                                        color: 'white',
+                                        fontSize: '0.7rem',
+                                        fontWeight: '800',
+                                        textTransform: 'uppercase',
+                                        boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
+                                    }}>
+                                        Oferta
+                                    </div>
+                                )}
+                                {product.stock <= 0 && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        inset: 0,
+                                        background: 'rgba(0,0,0,0.6)',
+                                        backdropFilter: 'blur(2px)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: 'white',
+                                        fontWeight: '800',
+                                        fontSize: '1.2rem'
+                                    }}>
+                                        AGOTADO
+                                    </div>
+                                )}
                             </div>
 
                             <div>
@@ -187,18 +220,44 @@ const PublicStorefront = () => {
                             </div>
 
                             <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--primary-color)' }}>
-                                    ${product.price.toLocaleString()}
-                                </span>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    {product.discount_price ? (
+                                        <>
+                                            <span style={{ fontSize: '0.85rem', opacity: 0.5, textDecoration: 'line-through' }}>
+                                                ${product.price.toLocaleString()}
+                                            </span>
+                                            <span style={{ fontSize: '1.5rem', fontWeight: '800', color: '#ef4444' }}>
+                                                ${product.discount_price.toLocaleString()}
+                                            </span>
+                                        </>
+                                    ) : (
+                                        <span style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--primary-color)' }}>
+                                            ${product.price.toLocaleString()}
+                                        </span>
+                                    )}
+                                </div>
                                 <button
                                     onClick={() => {
-                                        addToCart(product);
+                                        addToCart({
+                                            ...product,
+                                            price: product.discount_price || product.price
+                                        });
                                         toast.success(`Añadido: ${product.name}`);
                                     }}
                                     className="btn-primary"
-                                    style={{ borderRadius: '10px', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                                    disabled={product.stock <= 0}
+                                    style={{
+                                        borderRadius: '10px',
+                                        padding: '8px 16px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        opacity: product.stock <= 0 ? 0.5 : 1,
+                                        cursor: product.stock <= 0 ? 'not-allowed' : 'pointer',
+                                        filter: product.stock <= 0 ? 'grayscale(1)' : 'none'
+                                    }}
                                 >
-                                    <Plus size={18} /> Añadir
+                                    {product.stock <= 0 ? 'Sin Stock' : <><Plus size={18} /> Añadir</>}
                                 </button>
                             </div>
                         </motion.div>
@@ -299,10 +358,38 @@ const PublicStorefront = () => {
                                         </div>
                                         <div className="glass-panel" style={{ padding: '1rem', background: 'rgba(99, 102, 241, 0.05)', border: '1px solid #6366f133' }}>
                                             <p style={{ margin: 0, fontSize: '0.85rem' }}>
-                                                <strong>Nota:</strong> En esta versión de prueba, el pago se procesará automáticamente al finalizar.
+                                                <strong>Nota:</strong> Los datos se validarán en el siguiente paso de pago simulado.
                                             </p>
                                         </div>
                                     </form>
+                                )}
+
+                                {checkoutStep === 'payment' && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', textAlign: 'center' }}>
+                                        <div style={{ padding: '2rem', background: '#009ee3', borderRadius: '16px', color: 'white' }}>
+                                            <h3 style={{ margin: 0 }}>Mercado Pago</h3>
+                                            <p style={{ opacity: 0.8, fontSize: '0.9rem' }}>Pasarela Segura</p>
+                                        </div>
+                                        <div>
+                                            <h4 style={{ margin: '0 0 10px 0' }}>Estás pagando</h4>
+                                            <div style={{ fontSize: '2.5rem', fontWeight: '800' }}>${cartTotal.toLocaleString()}</div>
+                                        </div>
+                                        <div className="glass-panel" style={{ padding: '1.5rem', textAlign: 'left' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                                <span style={{ opacity: 0.6 }}>Concepto:</span>
+                                                <span>Carrito Pro Order</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span style={{ opacity: 0.6 }}>Email:</span>
+                                                <span>{customerData.email}</span>
+                                            </div>
+                                        </div>
+                                        <div style={{ border: '2px dashed #009ee333', padding: '1.5rem', borderRadius: '12px' }}>
+                                            <p style={{ margin: 0, fontSize: '0.9rem', color: '#009ee3', fontWeight: '600' }}>
+                                                Simulación: Haz clic en el botón de abajo para confirmar el pago exitoso.
+                                            </p>
+                                        </div>
+                                    </div>
                                 )}
 
                                 {checkoutStep === 'success' && (
@@ -334,16 +421,34 @@ const PublicStorefront = () => {
                                         >
                                             Continuar <ArrowRight size={20} />
                                         </button>
-                                    ) : (
+                                    ) : checkoutStep === 'info' ? (
                                         <div style={{ display: 'flex', gap: '10px' }}>
                                             <button onClick={() => setCheckoutStep('cart')} className="glass-panel" style={{ flex: 1, padding: '15px' }}>Atrás</button>
                                             <button
-                                                form="checkout-form"
-                                                type="submit"
+                                                onClick={(e) => {
+                                                    const form = document.getElementById('checkout-form');
+                                                    if (form.checkValidity()) {
+                                                        e.preventDefault();
+                                                        setCheckoutStep('payment');
+                                                    } else {
+                                                        form.reportValidity();
+                                                    }
+                                                }}
                                                 className="btn-primary"
                                                 style={{ flex: 2, padding: '15px', borderRadius: '12px', fontWeight: '600' }}
                                             >
-                                                Finalizar Compra
+                                                Pagar ahora
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                            <button onClick={() => setCheckoutStep('info')} className="glass-panel" style={{ flex: 1, padding: '15px' }}>Atrás</button>
+                                            <button
+                                                onClick={handleCheckout}
+                                                className="btn-primary"
+                                                style={{ flex: 2, padding: '15px', borderRadius: '12px', fontWeight: '600', background: '#009ee3', border: 'none' }}
+                                            >
+                                                Confirmar Pago
                                             </button>
                                         </div>
                                     )}
