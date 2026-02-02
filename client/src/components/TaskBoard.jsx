@@ -9,20 +9,27 @@ import { io } from 'socket.io-client';
 // Standard socket initialization with explicit URL for dev
 const getSocket = () => {
     const isDev = window.location.port === '5173';
+    const isVercel = window.location.hostname.includes('vercel.app');
     const serverUrl = isDev ? `http://${window.location.hostname}:3000` : '';
+
     return io(serverUrl, {
         path: '/socket.io',
-        transports: ['websocket', 'polling'],
-        autoConnect: true,
-        reconnection: true
+        transports: ['polling', 'websocket'],
+        autoConnect: !isVercel, // Disable auto-connect on Vercel to avoid console spam
+        reconnection: !isVercel,
+        timeout: 10000
     });
 };
 
 const socket = getSocket();
 
-// Explicitly log connection events for TaskBoard
-socket.on('connect', () => console.log('[SOCKET TaskBoard] Connected to server, ID:', socket.id));
-socket.on('connect_error', (err) => console.log('[SOCKET TaskBoard] Connection error:', err.message));
+// Log connection events only in dev or if successful
+socket.on('connect', () => console.log('[SOCKET TaskBoard] Connected, ID:', socket.id));
+socket.on('connect_error', (err) => {
+    if (window.location.port === '5173') {
+        console.log('[SOCKET TaskBoard] Connection error:', err.message);
+    }
+});
 
 const TaskBoard = ({ searchQuery = '' }) => {
     const [tasks, setTasks] = useState([]);

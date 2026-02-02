@@ -25,24 +25,36 @@ router.post('/', verifyToken, upload.single('file'), async (req, res) => {
 
         if (db.isFirebase) {
             // Firebase Storage Upload
-            const bucket = storage.bucket(); // Uses default bucket
-            const file = bucket.file(`uploads/${fileName}`);
-
-            await file.save(req.file.buffer, {
-                metadata: {
-                    contentType: req.file.mimetype
-                }
-            });
-
-            // Make public (requires bucket permissions, fallback to download URL)
             try {
-                await file.makePublic();
-            } catch (e) {
-                console.warn('[UPLOAD] Could not make file public, link might require auth:', e.message);
-            }
+                const bucket = storage.bucket();
+                if (!bucket.name) {
+                    throw new Error('Firebase Storage bucket not properly initialized (missing bucket name)');
+                }
 
-            const publicUrl = `https://storage.googleapis.com/${bucket.name}/uploads/${fileName}`;
-            return res.json({ url: publicUrl });
+                const file = bucket.file(`uploads/${fileName}`);
+
+                await file.save(req.file.buffer, {
+                    metadata: {
+                        contentType: req.file.mimetype
+                    }
+                });
+
+                // Attempt to get a signed URL as a fallback or more robust public link
+                // For "public" feel on Vercel/Firebase, we use the standard download URL format
+                const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(`uploads/${fileName}`)}?alt=media`;
+
+                // Optional: attempt makePublic but don't crash if it fails
+                try {
+                    await file.makePublic();
+                } catch (e) {
+                    console.warn('[UPLOAD] makePublic failed, but continuing with media URL:', e.message);
+                }
+
+                return res.json({ url: publicUrl });
+            } catch (err) {
+                console.error('[FIREBASE UPLOAD DETAIL]', err);
+                throw new Error(`Error en Firebase Storage: ${err.message}`);
+            }
         } else {
             // Local fallback (if not in Firebase mode)
             const uploadDir = path.join(__dirname, '../uploads');

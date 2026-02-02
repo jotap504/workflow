@@ -4,21 +4,27 @@ import { toast } from 'sonner';
 // Standard socket initialization with explicit URL for dev
 const getSocket = () => {
     const isDev = window.location.port === '5173';
+    const isVercel = window.location.hostname.includes('vercel.app');
     const serverUrl = isDev ? `http://${window.location.hostname}:3000` : '';
-    console.log('[DEBUG] Initializing socket with URL:', serverUrl || 'Current Origin');
+
     return io(serverUrl, {
         path: '/socket.io',
-        transports: ['websocket', 'polling'],
-        autoConnect: true,
-        reconnection: true
+        transports: ['polling', 'websocket'],
+        autoConnect: !isVercel,
+        reconnection: !isVercel,
+        timeout: 10000
     });
 };
 
 const socket = getSocket();
 
-// Explicitly log connection events
+// Log connection events
 socket.on('connect', () => console.log('[SOCKET] Connected to server, ID:', socket.id));
-socket.on('connect_error', (err) => console.log('[SOCKET] Connection error:', err.message));
+socket.on('connect_error', (err) => {
+    if (window.location.port === '5173') {
+        console.log('[SOCKET] Connection error:', err.message);
+    }
+});
 socket.on('disconnect', (reason) => console.log('[SOCKET] Disconnected:', reason));
 
 const NotificationBell = () => {
