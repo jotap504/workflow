@@ -47,7 +47,7 @@ const Dashboard = () => {
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
 
-          <h2 style={{ fontSize: '1.1rem', fontWeight: '600', letterSpacing: '0.5px', margin: 0 }}>Workflow</h2>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: '800', letterSpacing: '0.5px', margin: 0, background: 'linear-gradient(90deg, #6366f1, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Bprocess</h2>
 
           <nav className="desktop-nav" style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', marginLeft: '1rem' }}>
             <NavIcon to="/hub" icon={<LayoutGrid size={18} />} label="Menu Principal" navigate={navigate} />
@@ -206,7 +206,7 @@ const AdminSuite = () => {
         zIndex: 1000
       }}>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: '600', letterSpacing: '0.5px', margin: 0 }}>Admin Suite</h2>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: '800', letterSpacing: '0.5px', margin: 0, background: 'linear-gradient(90deg, #6366f1, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Bprocess Admin</h2>
           <nav className="desktop-nav" style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', marginLeft: '1rem' }}>
             <NavIcon to="/hub" icon={<LayoutGrid size={18} />} label="Menu Principal" navigate={navigate} />
             <NavIcon to="/admin-suite" icon={<Users size={18} />} label="Usuarios" navigate={navigate} />

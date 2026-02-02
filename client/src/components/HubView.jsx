@@ -84,10 +84,11 @@ const HubView = () => {
                 gap: '1.5rem'
             }}>
                 <div>
-                    <h1 style={{ fontSize: window.innerWidth < 640 ? '1.5rem' : '2rem', fontWeight: '700', margin: 0 }}>Business Suite</h1>
-                    <p style={{ opacity: 0.6 }}>Bienvenido de nuevo, {user?.username}</p>
+                    <h1 style={{ fontSize: window.innerWidth < 640 ? '1.5rem' : '2.5rem', fontWeight: '800', margin: 0, background: 'linear-gradient(90deg, #6366f1, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Bprocess</h1>
+                    <p style={{ opacity: 0.8, fontSize: '1rem', fontWeight: '500' }}>Vivir abundantemente haciendo lo que amás</p>
+                    <p style={{ opacity: 0.5, fontSize: '0.85rem' }}>Bienvenido de nuevo, {user?.username}</p>
                 </div>
-                <button onClick={logout} className="glass-panel" style={{ padding: '8px 16px', color: '#ef4444', border: 'none', cursor: 'pointer', width: window.innerWidth < 640 ? '100%' : 'auto' }}>
+                <button onClick={logout} className="glass-panel" style={{ padding: '8px 20px', color: '#ef4444', border: '1px solid #ef444433', cursor: 'pointer', borderRadius: '12px', fontWeight: '600' }}>
                     Cerrar Sesión
                 </button>
             </header>
@@ -164,8 +165,50 @@ const HubView = () => {
                 })}
             </div>
 
-            <footer style={{ marginTop: 'auto', padding: '4rem 0', opacity: 0.4, fontSize: '0.8rem' }}>
-                &copy; 2026 Tu Suite Empresarial. Todos los derechos reservados.
+            {/* Mentoría & Recursos Section */}
+            <div style={{ width: '100%', maxWidth: '1000px', marginTop: '4rem' }}>
+                <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', textAlign: window.innerWidth < 640 ? 'center' : 'left' }}>Mentoría & Recursos Gratuitos</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                    <a href="https://felizdeemprender.com/#7pasos" target="_blank" rel="noopener noreferrer" className="glass-panel" style={{ padding: '1.5rem', textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #10b98133' }}>
+                        <div style={{ background: '#10b98122', padding: '12px', borderRadius: '12px', color: '#10b981' }}>
+                            <ArrowRight size={24} />
+                        </div>
+                        <div>
+                            <h4 style={{ margin: 0 }}>Masterclass Gratuita</h4>
+                            <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.7 }}>7 pasos para emprender, ser feliz y ganar dinero.</p>
+                        </div>
+                    </a>
+                    <a href="https://felizdeemprender.com/#e-book" target="_blank" rel="noopener noreferrer" className="glass-panel" style={{ padding: '1.5rem', textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #6366f133' }}>
+                        <div style={{ background: '#6366f122', padding: '12px', borderRadius: '12px', color: '#6366f1' }}>
+                            <Book size={24} />
+                        </div>
+                        <div>
+                            <h4 style={{ margin: 0 }}>Descargar E-book</h4>
+                            <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.7 }}>Viví abundantemente haciendo lo que amás.</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <footer style={{
+                marginTop: 'auto',
+                padding: '4rem 0',
+                width: '100%',
+                maxWidth: '1000px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '1.5rem'
+            }}>
+                <div style={{ display: 'flex', gap: '1.5rem', opacity: 0.6 }}>
+                    <a href="https://www.instagram.com/felizdeemprender/" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>Instagram</a>
+                    <a href="https://www.linkedin.com/company/felizdeemprender/" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>LinkedIn</a>
+                    <a href="https://www.youtube.com/channel/UCKmkd4DeEsYsj3PCHIky1yw" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>YouTube</a>
+                    <a href="https://www.tiktok.com/@felizdeemprender" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>TikTok</a>
+                </div>
+                <div style={{ opacity: 0.4, fontSize: '0.8rem', textAlign: 'center' }}>
+                    &copy; 2026 Bprocess. Potenciado por <a href="https://felizdeemprender.com" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>Feliz de Emprender</a>.
+                </div>
             </footer>
         </div>
     );

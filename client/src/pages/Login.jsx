@@ -28,7 +28,11 @@ const Login = () => {
             height: '80vh'
         }}>
             <div className="glass-panel" style={{ padding: '3rem', width: '100%', maxWidth: '400px' }}>
-                <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>Iniciar Sesión</h2>
+                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                    <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: '800', background: 'linear-gradient(90deg, #6366f1, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Bprocess</h1>
+                    <p style={{ opacity: 0.6, fontSize: '0.9rem' }}>Vivir abundantemente haciendo lo que amás</p>
+                </div>
+                <h2 style={{ textAlign: 'center', marginBottom: '2rem', fontSize: '1.2rem', fontWeight: '500' }}>Iniciar Sesión</h2>
 
                 {error && (
                     <div style={{

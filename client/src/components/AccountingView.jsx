@@ -261,7 +261,7 @@ const AccountingView = () => {
                             <Building2 size={28} />
                         </div>
                         <div>
-                            <h2 style={{ margin: 0, fontSize: window.innerWidth < 640 ? '1.2rem' : '1.5rem' }}>Financial Hub</h2>
+                            <h2 style={{ margin: 0, fontSize: window.innerWidth < 640 ? '1.2rem' : '1.8rem', fontWeight: '800', background: 'linear-gradient(90deg, #6366f1, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Bprocess Accounting</h2>
                             <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>Gestión Profesional y Resultados</span>
                         </div>
                     </div>
