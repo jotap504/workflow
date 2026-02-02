@@ -50,7 +50,8 @@ const ShopAdminView = () => {
                 }
                 toast.success('Imagen subida correctamente');
             } else {
-                toast.error('Error al subir imagen');
+                const errorData = await response.json().catch(() => ({}));
+                toast.error(`Error: ${errorData.error || 'Error al subir imagen'}`);
             }
         } catch (error) {
             toast.error('Error de red al subir imagen');
