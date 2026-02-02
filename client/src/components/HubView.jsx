@@ -15,7 +15,7 @@ const HubView = () => {
             description: 'Gestión de tareas y equipos en tiempo real.',
             icon: <LayoutDashboard size={32} />,
             color: '#6366f1',
-            path: '/'
+            path: '/workflow'
         },
         {
             id: 'shop',
@@ -23,7 +23,7 @@ const HubView = () => {
             description: 'Venta de productos físicos y contenido digital.',
             icon: <ShoppingCart size={32} />,
             color: '#ec4899',
-            path: '/shop'
+            path: '/'
         },
         {
             id: 'accounting',

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom'
 import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { CartProvider } from './context/CartContext'
 import PrivateRoute from './components/PrivateRoute'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -16,6 +17,8 @@ import AccountingView from './components/AccountingView'
 import ProfileView from './components/ProfileView'
 import CategoriesView from './components/CategoriesView'
 import ClientsView from './components/ClientsView'
+import ShopAdminView from './components/ShopAdminView'
+import PublicStorefront from './components/PublicStorefront'
 import NotificationBell from './components/NotificationBell';
 
 import { LayoutDashboard, Calendar, Vote, BarChart, Users, LogOut, Moon, Sun, User, Layers, Menu, X, LayoutGrid } from 'lucide-react';
@@ -51,13 +54,14 @@ const Dashboard = () => {
 
           <nav className="desktop-nav" style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', marginLeft: '1rem' }}>
             <NavIcon to="/hub" icon={<LayoutGrid size={18} />} label="Menu Principal" navigate={navigate} />
-            <NavIcon to="/" icon={<LayoutDashboard size={18} />} label="Tablero" navigate={navigate} />
-            <NavIcon to="/calendar" icon={<Calendar size={18} />} label="Calendario" navigate={navigate} />
-            <NavIcon to="/polls" icon={<Vote size={18} />} label="Votaciones" navigate={navigate} />
-            <NavIcon to="/reports" icon={<BarChart size={18} />} label="Reportes" navigate={navigate} />
-            <NavIcon to="/profile" icon={<User size={18} />} label="Perfil" navigate={navigate} />
-            {(user?.role === 'admin' || user?.role === 'manager') && <NavIcon to="/categories" icon={<Layers size={18} />} label="Categorías" navigate={navigate} />}
-            {(user?.role === 'admin' || user?.role === 'manager') && <NavIcon to="/users" icon={<Users size={18} />} label="Usuarios" navigate={navigate} />}
+            <NavIcon to="/workflow" icon={<LayoutDashboard size={18} />} label="Tablero" navigate={navigate} />
+            <NavIcon to="/workflow/calendar" icon={<Calendar size={18} />} label="Calendario" navigate={navigate} />
+            <NavIcon to="/workflow/polls" icon={<Vote size={18} />} label="Votaciones" navigate={navigate} />
+            <NavIcon to="/workflow/reports" icon={<BarChart size={18} />} label="Reportes" navigate={navigate} />
+            <NavIcon to="/workflow/profile" icon={<User size={18} />} label="Perfil" navigate={navigate} />
+            {(user?.role === 'admin' || user?.role === 'manager') && <NavIcon to="/workflow/categories" icon={<Layers size={18} />} label="Categorías" navigate={navigate} />}
+            {(user?.role === 'admin' || user?.role === 'manager') && <NavIcon to="/workflow/users" icon={<Users size={18} />} label="Usuarios" navigate={navigate} />}
+            {(user?.role === 'admin' || user?.role === 'manager') && <NavIcon to="/shop" icon={<ShoppingCart size={18} />} label="Tienda" navigate={navigate} />}
           </nav>
         </div>
 
@@ -66,10 +70,10 @@ const Dashboard = () => {
           <button onClick={() => { navigate('/hub'); setMobileMenuOpen(false); }} style={{ textAlign: 'left', padding: '10px', background: 'transparent', border: 'none', color: 'inherit', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <LayoutGrid size={20} /> Menu Principal
           </button>
-          <button onClick={() => { navigate('/'); setMobileMenuOpen(false); }} style={{ textAlign: 'left', padding: '10px', background: 'transparent', border: 'none', color: 'inherit', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button onClick={() => { navigate('/workflow'); setMobileMenuOpen(false); }} style={{ textAlign: 'left', padding: '10px', background: 'transparent', border: 'none', color: 'inherit', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <LayoutDashboard size={20} /> Tablero
           </button>
-          <button onClick={() => { navigate('/calendar'); setMobileMenuOpen(false); }} style={{ textAlign: 'left', padding: '10px', background: 'transparent', border: 'none', color: 'inherit', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button onClick={() => { navigate('/workflow/calendar'); setMobileMenuOpen(false); }} style={{ textAlign: 'left', padding: '10px', background: 'transparent', border: 'none', color: 'inherit', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Calendar size={20} /> Calendario
           </button>
           <button onClick={() => { navigate('/polls'); setMobileMenuOpen(false); }} style={{ textAlign: 'left', padding: '10px', background: 'transparent', border: 'none', color: 'inherit', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -147,12 +151,12 @@ const Dashboard = () => {
       <main>
         <Routes>
           <Route path="/" element={<TaskBoard searchQuery={searchQuery} />} />
-          <Route path="/calendar" element={<CalendarView />} />
-          <Route path="/polls" element={<PollsView />} />
-          <Route path="/reports" element={<ReportsView />} />
-          <Route path="/profile" element={<ProfileView />} />
-          <Route path="/users" element={<UsersView globalMode={false} />} />
-          <Route path="/categories" element={<CategoriesView />} />
+          <Route path="calendar" element={<CalendarView />} />
+          <Route path="polls" element={<PollsView />} />
+          <Route path="reports" element={<ReportsView />} />
+          <Route path="profile" element={<ProfileView />} />
+          <Route path="users" element={<UsersView globalMode={false} />} />
+          <Route path="categories" element={<CategoriesView />} />
         </Routes>
       </main>
     </div>
@@ -251,46 +255,54 @@ function App() {
 
   return (
     <AuthProvider>
-      <Router>
-        <Toaster position="top-right" richColors toastOptions={{ style: { zIndex: 2000 } }} />
+      <CartProvider>
+        <Router>
+          <Toaster position="top-right" richColors toastOptions={{ style: { zIndex: 2000 } }} />
 
-        {/* Global Theme Toggle (Absolute or fixed position, or in header of pages) */}
-        <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
-          <button onClick={toggleTheme} className="glass-panel" style={{ padding: '0.5rem 1rem' }}>
-            {theme === 'light' ? '🌙' : '☀️'}
-          </button>
-        </div>
+          {/* Global Theme Toggle (Absolute or fixed position, or in header of pages) */}
+          <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
+            <button onClick={toggleTheme} className="glass-panel" style={{ padding: '0.5rem 1rem' }}>
+              {theme === 'light' ? '🌙' : '☀️'}
+            </button>
+          </div>
 
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/hub" element={
-            <PrivateRoute>
-              <HubView />
-            </PrivateRoute>
-          } />
-          <Route path="/accounting/*" element={
-            <PrivateRoute>
-              <AccountingView />
-            </PrivateRoute>
-          } />
-          <Route path="/clients" element={
-            <PrivateRoute>
-              <ClientsView />
-            </PrivateRoute>
-          } />
-          <Route path="/admin-suite/*" element={
-            <PrivateRoute>
-              <AdminSuite />
-            </PrivateRoute>
-          } />
-          <Route path="/*" element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          } />
-        </Routes>
-      </Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/" element={<PublicStorefront />} />
+            <Route path="/hub" element={
+              <PrivateRoute>
+                <HubView />
+              </PrivateRoute>
+            } />
+            <Route path="/accounting/*" element={
+              <PrivateRoute>
+                <AccountingView />
+              </PrivateRoute>
+            } />
+            <Route path="/clients" element={
+              <PrivateRoute>
+                <ClientsView />
+              </PrivateRoute>
+            } />
+            <Route path="/shop/*" element={
+              <PrivateRoute>
+                <ShopAdminView />
+              </PrivateRoute>
+            } />
+            <Route path="/admin-suite/*" element={
+              <PrivateRoute>
+                <AdminSuite />
+              </PrivateRoute>
+            } />
+            <Route path="/workflow/*" element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            } />
+          </Routes>
+        </Router>
+      </CartProvider>
     </AuthProvider>
   )
 }

@@ -152,6 +152,57 @@ function initDB() {
       FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE
     )`);
 
+        // --- E-commerce (Carrito Pro) Tables ---
+
+        // Products Table
+        db.run(`CREATE TABLE IF NOT EXISTS products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT,
+            price REAL NOT NULL,
+            type TEXT CHECK(type IN ('physical', 'virtual', 'subscription', 'course')) DEFAULT 'physical',
+            image_url TEXT,
+            category TEXT,
+            active BOOLEAN DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`);
+
+        // Orders Table
+        db.run(`CREATE TABLE IF NOT EXISTS orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            customer_email TEXT NOT NULL,
+            customer_name TEXT,
+            total_amount REAL NOT NULL,
+            status TEXT CHECK(status IN ('pending', 'paid', 'shipped', 'completed', 'cancelled')) DEFAULT 'pending',
+            payment_id TEXT,
+            payment_method TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )`);
+
+        // Order Items Table
+        db.run(`CREATE TABLE IF NOT EXISTS order_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_id INTEGER NOT NULL,
+            product_id INTEGER NOT NULL,
+            quantity INTEGER DEFAULT 1,
+            unit_price REAL NOT NULL,
+            FOREIGN KEY(order_id) REFERENCES orders(id) ON DELETE CASCADE,
+            FOREIGN KEY(product_id) REFERENCES products(id)
+        )`);
+
+        // Product Access Table (for Courses/Virtual)
+        db.run(`CREATE TABLE IF NOT EXISTS product_access (
+            user_id INTEGER NOT NULL,
+            product_id INTEGER NOT NULL,
+            access_granted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY(user_id, product_id),
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE CASCADE
+        )`);
+
         // Migration: Add columns to tasks if they don't exist
         db.run(`ALTER TABLE tasks ADD COLUMN recurrence TEXT DEFAULT 'none'`, (err) => {
             if (err && !err.message.includes('duplicate column name')) {
