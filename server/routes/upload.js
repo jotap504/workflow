@@ -22,83 +22,80 @@ router.post('/', verifyToken, upload.single('file'), async (req, res) => {
         }
 
         const fileName = `${Date.now()}_${req.file.originalname.replace(/\s+/g, '_')}`;
-        const formData = new URLSearchParams();
 
-        // High priority: ImgBB if API key provided
-        console.log('[DEBUG UPLOAD] Starting upload process for:', fileName);
-        console.log('[DEBUG UPLOAD] IMGBB_API_KEY status:', process.env.IMGBB_API_KEY ? 'FOUND (starts with ' + process.env.IMGBB_API_KEY.substring(0, 4) + '...)' : 'MISSING');
+        // --- PROVEEDOR PRIORITARIO: ImgBB ---
+        const IMGBB_KEY = (process.env.IMGBB_API_KEY || '').trim();
+        console.log('[DEBUG UPLOAD] ImgBB Key Detectada:', IMGBB_KEY ? 'SÍ' : 'NO');
 
-        if (process.env.IMGBB_API_KEY) {
+        if (IMGBB_KEY) {
+            console.log('[DEBUG UPLOAD] Intentando subir a ImgBB...');
             try {
-                console.log('[DEBUG UPLOAD] Attempting ImgBB upload...');
+                const formData = new URLSearchParams();
                 formData.append('image', req.file.buffer.toString('base64'));
-                const imgbbResponse = await fetch(`https://api.imgbb.com/1/upload?key=${process.env.IMGBB_API_KEY.trim()}`, {
+
+                const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, {
                     method: 'POST',
                     body: formData
                 });
 
-                const imgbbData = await imgbbResponse.json();
-                console.log('[DEBUG UPLOAD] ImgBB status code:', imgbbResponse.status);
+                const data = await response.json();
+                console.log('[DEBUG UPLOAD] Respuesta ImgBB Status:', response.status);
 
-                if (imgbbData.success) {
-                    console.log('[DEBUG UPLOAD] ImgBB SUCCESS:', imgbbData.data.url);
-                    return res.json({ url: imgbbData.data.url });
+                if (data.success) {
+                    console.log('[DEBUG UPLOAD] ÉXITO ImgBB:', data.data.url);
+                    return res.json({ url: data.data.url });
                 } else {
-                    console.error('[DEBUG UPLOAD] ImgBB API error response:', JSON.stringify(imgbbData));
+                    console.error('[DEBUG UPLOAD] ERROR ImgBB API:', JSON.stringify(data));
+                    return res.status(response.status || 400).json({
+                        error: `Error de ImgBB: ${data.error?.message || 'Error desconocido'}`
+                    });
                 }
             } catch (err) {
-                console.error('[DEBUG UPLOAD] ImgBB exception:', err.message);
-                if (err.stack) console.error(err.stack);
+                console.error('[DEBUG UPLOAD] EXCEPCIÓN ImgBB:', err.message);
+                return res.status(500).json({ error: `Excepción al conectar con ImgBB: ${err.message}` });
             }
-        } else {
-            console.warn('[DEBUG UPLOAD] Skipping ImgBB because IMGBB_API_KEY is not defined in process.env');
         }
 
+        // --- PROVEEDOR SECUNDARIO: Firebase (Solo si no hay ImgBB_KEY) ---
+        console.warn('[DEBUG UPLOAD] No se detectó IMGBB_API_KEY. Intentando Firebase como plan B...');
+
         if (db.isFirebase) {
-            // Firebase Storage Upload
             try {
                 const bucket = storage.bucket();
                 if (!bucket.name) {
-                    throw new Error('Firebase Storage bucket not properly initialized (missing bucket name)');
+                    throw new Error('Firebase Storage bucket no inicializado');
                 }
 
                 const file = bucket.file(`uploads/${fileName}`);
-
                 await file.save(req.file.buffer, {
-                    metadata: {
-                        contentType: req.file.mimetype
-                    }
+                    metadata: { contentType: req.file.mimetype }
                 });
 
-                // Attempt to get a signed URL as a fallback or more robust public link
-                // For "public" feel on Vercel/Firebase, we use the standard download URL format
                 const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(`uploads/${fileName}`)}?alt=media`;
 
-                // Optional: attempt makePublic but don't crash if it fails
                 try {
                     await file.makePublic();
                 } catch (e) {
-                    console.warn('[UPLOAD] makePublic failed, but continuing with media URL:', e.message);
+                    console.warn('[UPLOAD] makePublic falló, usando URL media:', e.message);
                 }
 
                 return res.json({ url: publicUrl });
             } catch (err) {
                 console.error('[FIREBASE UPLOAD DETAIL]', err);
-                throw new Error(`Error en Firebase Storage: ${err.message}`);
+                return res.status(500).json({
+                    error: `Error en Firebase Storage (Bucket: ${storage.bucket().name}): ${err.message}`
+                });
             }
         } else {
-            // Local fallback (if not in Firebase mode)
+            // Local fallback
             const uploadDir = path.join(__dirname, '../uploads');
             if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
-
             const filePath = path.join(uploadDir, fileName);
             fs.writeFileSync(filePath, req.file.buffer);
-
-            const publicUrl = `/uploads/${fileName}`;
-            return res.json({ url: publicUrl });
+            return res.json({ url: `/uploads/${fileName}` });
         }
     } catch (error) {
-        console.error('[UPLOAD ERROR]', error);
+        console.error('[UPLOAD ERROR GLOBAL]', error);
         res.status(500).json({ error: error.message });
     }
 });
