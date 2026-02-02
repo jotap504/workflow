@@ -144,6 +144,20 @@ const PublicStorefront = () => {
     });
     const navigate = useNavigate();
 
+    const fetchProducts = async () => {
+        try {
+            const response = await fetch('/api/shop');
+            if (response.ok) {
+                const data = await response.json();
+                setProducts(data);
+            }
+        } catch (error) {
+            console.error('Error fetching products:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const fetchSettings = async () => {
         try {
             const response = await fetch('/api/shop/settings');
