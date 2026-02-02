@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, ShoppingBag, X, Plus, Minus, Check, ArrowRight, BookOpen, Package, Trash2 } from 'lucide-react';
+import { ShoppingCart, ShoppingBag, X, Plus, Minus, Check, ArrowRight, BookOpen, Package, Trash2, User, Instagram, Facebook, Smartphone, Mail, MapPin, Heart, Info, HelpCircle } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -125,24 +125,47 @@ const PublicStorefront = () => {
     const [checkoutStep, setCheckoutStep] = useState('cart'); // cart, info, payment, success
     const [customerData, setCustomerData] = useState({ name: '', email: '' });
     const [selectedProduct, setSelectedProduct] = useState(null);
+    const [activeSection, setActiveSection] = useState('shop'); // shop, about, stories, process, contact
+    const [settings, setSettings] = useState({
+        shop_name: 'Carrito Pro',
+        logo_url: '',
+        banner_url: '',
+        footer_text: '© 2026 Carrito Pro. Todos los derechos reservados.',
+        contact_email: '',
+        contact_phone: '',
+        address: '',
+        social_instagram: '',
+        social_facebook: '',
+        social_whatsapp: '',
+        sections_config: { about: true, stories: true, purchase_process: true, contact: true },
+        about_content: '',
+        stories_content: '',
+        purchase_process_content: ''
+    });
     const navigate = useNavigate();
 
-    const fetchProducts = async () => {
+    const fetchSettings = async () => {
         try {
-            const response = await fetch('/api/shop');
+            const response = await fetch('/api/shop/settings');
             if (response.ok) {
                 const data = await response.json();
-                setProducts(data);
+                if (data.id) {
+                    setSettings({
+                        ...data,
+                        sections_config: typeof data.sections_config === 'string'
+                            ? JSON.parse(data.sections_config)
+                            : (data.sections_config || settings.sections_config)
+                    });
+                }
             }
         } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
+            console.error('Error fetching settings:', error);
         }
     };
 
     useEffect(() => {
         fetchProducts();
+        fetchSettings();
     }, []);
 
     const handleCheckout = async (e) => {
@@ -196,12 +219,57 @@ const PublicStorefront = () => {
                 borderRadius: '0 0 20px 20px',
                 borderTop: 'none'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => navigate('/hub')}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'linear-gradient(45deg, #6366f1, #ec4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                        <ShoppingBag size={24} />
-                    </div>
-                    <h1 style={{ fontSize: '1.5rem', margin: 0, fontWeight: '800' }}>Carrito Pro</h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => { setActiveSection('shop'); window.scrollTo(0, 0); }}>
+                    {settings.logo_url ? (
+                        <img src={settings.logo_url} alt="Logo" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+                    ) : (
+                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'linear-gradient(45deg, #6366f1, #ec4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                            <ShoppingBag size={24} />
+                        </div>
+                    )}
+                    <h1 style={{ fontSize: '1.5rem', margin: 0, fontWeight: '800' }}>{settings.shop_name}</h1>
                 </div>
+
+                <nav style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+                    <button
+                        onClick={() => setActiveSection('shop')}
+                        style={{ background: 'transparent', fontWeight: activeSection === 'shop' ? '700' : '500', color: activeSection === 'shop' ? 'var(--primary-color)' : 'inherit', border: 'none', cursor: 'pointer', fontSize: '0.95rem' }}
+                    >
+                        Tienda
+                    </button>
+                    {settings.sections_config.about && (
+                        <button
+                            onClick={() => setActiveSection('about')}
+                            style={{ background: 'transparent', fontWeight: activeSection === 'about' ? '700' : '500', color: activeSection === 'about' ? 'var(--primary-color)' : 'inherit', border: 'none', cursor: 'pointer', fontSize: '0.95rem' }}
+                        >
+                            Nosotros
+                        </button>
+                    )}
+                    {settings.sections_config.stories && (
+                        <button
+                            onClick={() => setActiveSection('stories')}
+                            style={{ background: 'transparent', fontWeight: activeSection === 'stories' ? '700' : '500', color: activeSection === 'stories' ? 'var(--primary-color)' : 'inherit', border: 'none', cursor: 'pointer', fontSize: '0.95rem' }}
+                        >
+                            Historias
+                        </button>
+                    )}
+                    {settings.sections_config.purchase_process && (
+                        <button
+                            onClick={() => setActiveSection('process')}
+                            style={{ background: 'transparent', fontWeight: activeSection === 'process' ? '700' : '500', color: activeSection === 'process' ? 'var(--primary-color)' : 'inherit', border: 'none', cursor: 'pointer', fontSize: '0.95rem' }}
+                        >
+                            ¿Cómo Comprar?
+                        </button>
+                    )}
+                    {settings.sections_config.contact && (
+                        <button
+                            onClick={() => setActiveSection('contact')}
+                            style={{ background: 'transparent', fontWeight: activeSection === 'contact' ? '700' : '500', color: activeSection === 'contact' ? 'var(--primary-color)' : 'inherit', border: 'none', cursor: 'pointer', fontSize: '0.95rem' }}
+                        >
+                            Contacto
+                        </button>
+                    )}
+                </nav>
 
                 <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
                     {user ? (
@@ -267,141 +335,317 @@ const PublicStorefront = () => {
             </header>
 
             <main className="container" style={{ padding: '3rem 1.5rem' }}>
-                <section style={{ marginBottom: '4rem', textAlign: 'center' }}>
-                    <motion.h2
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        style={{ fontSize: '3rem', fontWeight: '900', marginBottom: '1rem' }}
-                    >
-                        Potencia tu Negocio & Aprendizaje
-                    </motion.h2>
-                    <p style={{ fontSize: '1.2rem', opacity: 0.7, maxWidth: '600px', margin: '0 auto' }}>
-                        Descubre nuestra selección Premium de productos físicos, cursos certificados y servicios digitales exclusivos.
-                    </p>
-                </section>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '2rem' }}>
-                    {products.map((product, idx) => (
+                <AnimatePresence mode="wait">
+                    {activeSection === 'shop' && (
                         <motion.div
-                            key={product.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: idx * 0.1 }}
-                            className="glass-panel"
-                            onClick={() => setSelectedProduct(product)}
-                            style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', overflow: 'hidden', cursor: 'pointer' }}
+                            key="shop-section"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
                         >
-                            <div style={{ height: '200px', borderRadius: '12px', background: 'rgba(0,0,0,0.1)', overflow: 'hidden', position: 'relative' }}>
-                                {product.image_url ? (
-                                    <img src={product.image_url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                ) : (
-                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.3 }}>
-                                        <Package size={48} />
-                                    </div>
-                                )}
-                                <div style={{
-                                    position: 'absolute',
-                                    top: '10px',
-                                    right: '10px',
-                                    padding: '5px 12px',
-                                    borderRadius: '20px',
-                                    background: 'rgba(0,0,0,0.6)',
-                                    backdropFilter: 'blur(5px)',
-                                    color: 'white',
-                                    fontSize: '0.7rem',
-                                    fontWeight: '700',
-                                    textTransform: 'uppercase'
-                                }}>
-                                    {product.type === 'course' ? 'Curso' : product.type === 'physical' ? 'Físico' : 'Digital'}
-                                </div>
-                                {product.discount_price && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        top: '10px',
-                                        left: '10px',
-                                        padding: '5px 12px',
-                                        borderRadius: '20px',
-                                        background: '#ef4444',
-                                        color: 'white',
-                                        fontSize: '0.7rem',
-                                        fontWeight: '800',
-                                        textTransform: 'uppercase',
-                                        boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
-                                    }}>
-                                        Oferta
-                                    </div>
-                                )}
-                                {product.stock <= 0 && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        inset: 0,
-                                        background: 'rgba(0,0,0,0.6)',
-                                        backdropFilter: 'blur(2px)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        color: 'white',
-                                        fontWeight: '800',
-                                        fontSize: '1.2rem'
-                                    }}>
-                                        AGOTADO
-                                    </div>
-                                )}
-                            </div>
-
-                            <div>
-                                <h3 style={{ fontSize: '1.25rem', marginBottom: '8px' }}>{product.name}</h3>
-                                <p style={{ fontSize: '0.9rem', opacity: 0.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', height: '2.7rem' }}>
-                                    {product.description || 'Sin descripción disponible.'}
-                                </p>
-                            </div>
-
-                            <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    {product.discount_price ? (
-                                        <>
-                                            <span style={{ fontSize: '0.85rem', opacity: 0.5, textDecoration: 'line-through' }}>
-                                                ${product.price.toLocaleString()}
-                                            </span>
-                                            <span style={{ fontSize: '1.5rem', fontWeight: '800', color: '#ef4444' }}>
-                                                ${product.discount_price.toLocaleString()}
-                                            </span>
-                                        </>
-                                    ) : (
-                                        <span style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--primary-color)' }}>
-                                            ${product.price.toLocaleString()}
-                                        </span>
-                                    )}
-                                </div>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        addToCart({
-                                            ...product,
-                                            price: product.discount_price || product.price
-                                        });
-                                        toast.success(`Añadido: ${product.name}`);
-                                    }}
-                                    className="btn-primary"
-                                    disabled={product.stock <= 0}
-                                    style={{
-                                        borderRadius: '10px',
-                                        padding: '8px 16px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                        opacity: product.stock <= 0 ? 0.5 : 1,
-                                        cursor: product.stock <= 0 ? 'not-allowed' : 'pointer',
-                                        filter: product.stock <= 0 ? 'grayscale(1)' : 'none'
-                                    }}
+                            <section style={{
+                                marginBottom: '4rem',
+                                textAlign: 'center',
+                                padding: '5rem 2rem',
+                                borderRadius: '30px',
+                                background: settings.banner_url ? `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url(${settings.banner_url})` : 'rgba(255,255,255,0.02)',
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                border: '1px solid var(--card-border)',
+                                position: 'relative',
+                                overflow: 'hidden'
+                            }}>
+                                <motion.h2
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: '900', marginBottom: '1rem', textShadow: '0 5px 15px rgba(0,0,0,0.5)' }}
                                 >
-                                    {product.stock <= 0 ? 'Sin Stock' : <><Plus size={18} /> Añadir</>}
-                                </button>
+                                    {settings.shop_name}
+                                </motion.h2>
+                                <p style={{ fontSize: '1.2rem', opacity: 0.9, maxWidth: '600px', margin: '0 auto', fontWeight: '500' }}>
+                                    Explora nuestra selección Premium de productos y servicios exclusivos.
+                                </p>
+                            </section>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '2rem' }}>
+                                {products.map((product, idx) => (
+                                    <motion.div
+                                        key={product.id}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: idx * 0.1 }}
+                                        className="glass-panel"
+                                        onClick={() => setSelectedProduct(product)}
+                                        style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', overflow: 'hidden', cursor: 'pointer' }}
+                                    >
+                                        <div style={{ height: '200px', borderRadius: '12px', background: 'rgba(0,0,0,0.1)', overflow: 'hidden', position: 'relative' }}>
+                                            {product.image_url ? (
+                                                <img src={product.image_url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            ) : (
+                                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.3 }}>
+                                                    <Package size={48} />
+                                                </div>
+                                            )}
+                                            <div style={{
+                                                position: 'absolute',
+                                                top: '10px',
+                                                right: '10px',
+                                                padding: '5px 12px',
+                                                borderRadius: '20px',
+                                                background: 'rgba(0,0,0,0.6)',
+                                                backdropFilter: 'blur(5px)',
+                                                color: 'white',
+                                                fontSize: '0.7rem',
+                                                fontWeight: '700',
+                                                textTransform: 'uppercase'
+                                            }}>
+                                                {product.type === 'course' ? 'Curso' : product.type === 'physical' ? 'Físico' : 'Digital'}
+                                            </div>
+                                            {product.discount_price && (
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    top: '10px',
+                                                    left: '10px',
+                                                    padding: '5px 12px',
+                                                    borderRadius: '20px',
+                                                    background: '#ef4444',
+                                                    color: 'white',
+                                                    fontSize: '0.7rem',
+                                                    fontWeight: '800',
+                                                    textTransform: 'uppercase',
+                                                    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
+                                                }}>
+                                                    Oferta
+                                                </div>
+                                            )}
+                                            {product.stock <= 0 && (
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    inset: 0,
+                                                    background: 'rgba(0,0,0,0.6)',
+                                                    backdropFilter: 'blur(2px)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    color: 'white',
+                                                    fontWeight: '800',
+                                                    fontSize: '1.2rem'
+                                                }}>
+                                                    AGOTADO
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <h3 style={{ fontSize: '1.25rem', marginBottom: '8px' }}>{product.name}</h3>
+                                            <p style={{ fontSize: '0.9rem', opacity: 0.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', height: '2.7rem' }}>
+                                                {product.description || 'Sin descripción disponible.'}
+                                            </p>
+                                        </div>
+
+                                        <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                {product.discount_price ? (
+                                                    <>
+                                                        <span style={{ fontSize: '0.85rem', opacity: 0.5, textDecoration: 'line-through' }}>
+                                                            ${product.price.toLocaleString()}
+                                                        </span>
+                                                        <span style={{ fontSize: '1.5rem', fontWeight: '800', color: '#ef4444' }}>
+                                                            ${product.discount_price.toLocaleString()}
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <span style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--primary-color)' }}>
+                                                        ${product.price.toLocaleString()}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    addToCart({
+                                                        ...product,
+                                                        price: product.discount_price || product.price
+                                                    });
+                                                    toast.success(`Añadido: ${product.name}`);
+                                                }}
+                                                className="btn-primary"
+                                                disabled={product.stock <= 0}
+                                                style={{
+                                                    borderRadius: '10px',
+                                                    padding: '8px 16px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '8px',
+                                                    opacity: product.stock <= 0 ? 0.5 : 1,
+                                                    cursor: product.stock <= 0 ? 'not-allowed' : 'pointer',
+                                                    filter: product.stock <= 0 ? 'grayscale(1)' : 'none'
+                                                }}
+                                            >
+                                                {product.stock <= 0 ? 'Sin Stock' : <><Plus size={18} /> Añadir</>}
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                ))}
                             </div>
                         </motion.div>
-                    ))}
-                </div>
+                    )}
+
+                    {activeSection === 'about' && (
+                        <motion.div
+                            key="about-section"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="glass-panel"
+                            style={{ padding: '4rem', maxWidth: '800px', margin: '0 auto' }}
+                        >
+                            <h2 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <Heart className="text-primary" /> Quiénes Somos
+                            </h2>
+                            <div style={{ fontSize: '1.2rem', lineHeight: '1.8', opacity: 0.8, whiteSpace: 'pre-wrap' }}>
+                                {settings.about_content || 'Contenido no disponible.'}
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {activeSection === 'stories' && (
+                        <motion.div
+                            key="stories-section"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="glass-panel"
+                            style={{ padding: '4rem', maxWidth: '800px', margin: '0 auto' }}
+                        >
+                            <h2 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <BookOpen className="text-primary" /> Historias y Comunidad
+                            </h2>
+                            <div style={{ fontSize: '1.2rem', lineHeight: '1.8', opacity: 0.8, whiteSpace: 'pre-wrap' }}>
+                                {settings.stories_content || 'Aún no hay historias para compartir.'}
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {activeSection === 'process' && (
+                        <motion.div
+                            key="process-section"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="glass-panel"
+                            style={{ padding: '4rem', maxWidth: '800px', margin: '0 auto' }}
+                        >
+                            <h2 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <HelpCircle className="text-primary" /> Proceso de Compra
+                            </h2>
+                            <div style={{ fontSize: '1.2rem', lineHeight: '1.8', opacity: 0.8, whiteSpace: 'pre-wrap' }}>
+                                {settings.purchase_process_content || 'Información sobre el proceso de compra disponible próximamente.'}
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {activeSection === 'contact' && (
+                        <motion.div
+                            key="contact-section"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="glass-panel"
+                            style={{ padding: '4rem', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}
+                        >
+                            <h2 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '2rem' }}>Ponte en Contacto</h2>
+                            <p style={{ opacity: 0.7, marginBottom: '3rem' }}>¿Tienes alguna duda o necesitas asesoramiento? Estamos aquí para ayudarte.</p>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                {settings.contact_email && (
+                                    <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '20px', background: 'rgba(255,255,255,0.03)' }}>
+                                        <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <Mail size={24} className="text-primary" />
+                                        </div>
+                                        <div style={{ textAlign: 'left' }}>
+                                            <div style={{ fontSize: '0.8rem', opacity: 0.5 }}>Email</div>
+                                            <div style={{ fontWeight: '600' }}>{settings.contact_email}</div>
+                                        </div>
+                                    </div>
+                                )}
+                                {settings.contact_phone && (
+                                    <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '20px', background: 'rgba(255,255,255,0.03)' }}>
+                                        <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <Smartphone size={24} className="text-primary" />
+                                        </div>
+                                        <div style={{ textAlign: 'left' }}>
+                                            <div style={{ fontSize: '0.8rem', opacity: 0.5 }}>Teléfono / WhatsApp</div>
+                                            <div style={{ fontWeight: '600' }}>{settings.contact_phone}</div>
+                                        </div>
+                                    </div>
+                                )}
+                                {settings.address && (
+                                    <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '20px', background: 'rgba(255,255,255,0.03)' }}>
+                                        <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <MapPin size={24} className="text-primary" />
+                                        </div>
+                                        <div style={{ textAlign: 'left' }}>
+                                            <div style={{ fontSize: '0.8rem', opacity: 0.5 }}>Ubicación</div>
+                                            <div style={{ fontWeight: '600' }}>{settings.address}</div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </main>
+
+            {/* Footer Section */}
+            <footer className="glass-panel" style={{ marginTop: '5rem', padding: '4rem 2rem', borderRadius: '40px 40px 0 0', borderBottom: 'none' }}>
+                <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '3rem' }}>
+                    <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.5rem' }}>
+                            {settings.logo_url ? <img src={settings.logo_url} alt="Logo" style={{ width: '30px', height: '30px' }} /> : <ShoppingBag size={24} className="text-primary" />}
+                            <h3 style={{ margin: 0, fontWeight: '800' }}>{settings.shop_name}</h3>
+                        </div>
+                        <p style={{ opacity: 0.6, fontSize: '0.9rem', lineHeight: '1.6' }}>
+                            Potenciando negocios y personas a través de soluciones digitales de alta calidad y productos certificados.
+                        </p>
+                    </div>
+
+                    <div>
+                        <h4 style={{ marginBottom: '1.5rem' }}>Enlaces Rápidos</h4>
+                        <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '10px', opacity: 0.7, fontSize: '0.9rem' }}>
+                            <li style={{ cursor: 'pointer' }} onClick={() => setActiveSection('shop')}>Tienda Online</li>
+                            {settings.sections_config.about && <li style={{ cursor: 'pointer' }} onClick={() => setActiveSection('about')}>Quíenes Somos</li>}
+                            {settings.sections_config.stories && <li style={{ cursor: 'pointer' }} onClick={() => setActiveSection('stories')}>Nuestras Historias</li>}
+                            {settings.sections_config.purchase_process && <li style={{ cursor: 'pointer' }} onClick={() => setActiveSection('process')}>Guía de Compra</li>}
+                            <li style={{ cursor: 'pointer' }} onClick={() => setActiveSection('contact')}>Soporte y Contacto</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 style={{ marginBottom: '1.5rem' }}>Redes Sociales</h4>
+                        <div style={{ display: 'flex', gap: '15px' }}>
+                            {settings.social_instagram && (
+                                <a href={settings.social_instagram} target="_blank" rel="noopener noreferrer" className="glass-panel" style={{ width: '45px', height: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'inherit' }}>
+                                    <Instagram size={20} />
+                                </a>
+                            )}
+                            {settings.social_facebook && (
+                                <a href={settings.social_facebook} target="_blank" rel="noopener noreferrer" className="glass-panel" style={{ width: '45px', height: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'inherit' }}>
+                                    <Facebook size={20} />
+                                </a>
+                            )}
+                            {settings.social_whatsapp && (
+                                <a href={`https://wa.me/${settings.social_whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="glass-panel" style={{ width: '45px', height: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'inherit' }}>
+                                    <Smartphone size={20} />
+                                </a>
+                            )}
+                        </div>
+                    </div>
+                </div>
+                <div style={{ textAlign: 'center', marginTop: '4rem', opacity: 0.4, fontSize: '0.8rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    {settings.footer_text}
+                </div>
+            </footer>
 
             {/* Shopping Cart Drawer */}
             <AnimatePresence>

@@ -172,4 +172,72 @@ router.get('/my-orders', verifyToken, async (req, res) => {
     });
 });
 
+// --- Shop Settings ---
+
+// GET: Storefront settings (Public)
+router.get('/settings', (req, res) => {
+    if (db.isFirebase) {
+        db.collection('shop_settings').doc('default').get()
+            .then(doc => {
+                if (!doc.exists) return res.json({});
+                res.json(doc.data());
+            })
+            .catch(err => res.status(500).json({ error: err.message }));
+        return;
+    }
+    db.get('SELECT * FROM shop_settings ORDER BY id DESC LIMIT 1', [], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (row && row.sections_config) {
+            try {
+                row.sections_config = JSON.parse(row.sections_config);
+            } catch (e) { }
+        }
+        res.json(row || {});
+    });
+});
+
+// PUT: Update shop settings (Admin only)
+router.put('/settings', verifyToken, (req, res) => {
+    if (req.userRole !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+
+    const {
+        shop_name, logo_url, banner_url, footer_text,
+        contact_email, contact_phone, address,
+        social_instagram, social_facebook, social_whatsapp,
+        sections_config, about_content, stories_content, purchase_process_content
+    } = req.body;
+
+    const sectionsStr = typeof sections_config === 'string' ? sections_config : JSON.stringify(sections_config);
+
+    if (db.isFirebase) {
+        db.collection('shop_settings').doc('default').set({
+            shop_name, logo_url, banner_url, footer_text,
+            contact_email, contact_phone, address,
+            social_instagram, social_facebook, social_whatsapp,
+            sections_config: sections_config, // Store as map in Firebase
+            about_content, stories_content, purchase_process_content,
+            updated_at: new Date().toISOString()
+        }, { merge: true })
+            .then(() => res.json({ message: 'Configuración actualizada' }))
+            .catch(err => res.status(500).json({ error: err.message }));
+        return;
+    }
+
+    db.run(`UPDATE shop_settings SET 
+        shop_name = ?, logo_url = ?, banner_url = ?, footer_text = ?, 
+        contact_email = ?, contact_phone = ?, address = ?, 
+        social_instagram = ?, social_facebook = ?, social_whatsapp = ?, 
+        sections_config = ?, about_content = ?, stories_content = ?, purchase_process_content = ? 
+        WHERE id = (SELECT id FROM shop_settings ORDER BY id DESC LIMIT 1)`,
+        [shop_name, logo_url, banner_url, footer_text,
+            contact_email, contact_phone, address,
+            social_instagram, social_facebook, social_whatsapp,
+            sectionsStr, about_content, stories_content, purchase_process_content],
+        function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: 'Configuración actualizada con éxito' });
+        }
+    );
+});
+
 module.exports = router;

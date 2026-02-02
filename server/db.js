@@ -279,6 +279,25 @@ function initDB() {
             FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE CASCADE
         )`);
 
+        // Shop Settings Table
+        db.run(`CREATE TABLE IF NOT EXISTS shop_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            shop_name TEXT DEFAULT 'Carrito Pro',
+            logo_url TEXT,
+            banner_url TEXT,
+            footer_text TEXT,
+            contact_email TEXT,
+            contact_phone TEXT,
+            address TEXT,
+            social_instagram TEXT,
+            social_facebook TEXT,
+            social_whatsapp TEXT,
+            sections_config TEXT, -- JSON string for toggling sections: { about: true, stories: true, etc }
+            about_content TEXT,
+            stories_content TEXT,
+            purchase_process_content TEXT
+        )`);
+
         // Migration: Add columns to tasks if they don't exist
         db.run(`ALTER TABLE tasks ADD COLUMN recurrence TEXT DEFAULT 'none'`, (err) => {
             if (err && !err.message.includes('duplicate column name')) {
@@ -399,6 +418,28 @@ function initDB() {
                         });
                 });
                 console.log("Seeded example products.");
+            }
+        });
+
+        // Basic Seed for Shop Settings if empty
+        db.get("SELECT count(*) as count FROM shop_settings", [], (err, row) => {
+            if (row && row.count === 0) {
+                const defaultConfig = {
+                    about: true,
+                    stories: true,
+                    purchase_process: true,
+                    contact: true
+                };
+                db.run(`INSERT INTO shop_settings 
+                    (shop_name, footer_text, sections_config, about_content, stories_content, purchase_process_content) 
+                    VALUES (?, ?, ?, ?, ?, ?)`,
+                    ['Carrito Pro', '© 2026 Carrito Pro. Todos los derechos reservados.', JSON.stringify(defaultConfig),
+                        'Somos apasionados por el matcha de alta calidad.', 'Nuestra historia comenzó en Japón...', 'El proceso de compra es simple y seguro.'],
+                    (err) => {
+                        if (err) console.error("Error seeding shop settings:", err.message);
+                        else console.log("Seeded default shop settings.");
+                    }
+                );
             }
         });
     });
