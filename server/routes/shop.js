@@ -197,7 +197,7 @@ router.get('/settings', (req, res) => {
 });
 
 // PUT: Update shop settings (Admin only)
-router.put('/settings', verifyToken, (req, res) => {
+router.put('/settings', verifyToken, async (req, res) => {
     if (req.userRole !== 'admin') return res.status(403).json({ error: 'Forbidden' });
 
     const {
@@ -207,37 +207,75 @@ router.put('/settings', verifyToken, (req, res) => {
         sections_config, about_content, stories_content, purchase_process_content
     } = req.body;
 
-    const sectionsStr = typeof sections_config === 'string' ? sections_config : JSON.stringify(sections_config);
-
     if (db.isFirebase) {
-        db.collection('shop_settings').doc('default').set({
-            shop_name, logo_url, banner_url, footer_text,
-            contact_email, contact_phone, address,
-            social_instagram, social_facebook, social_whatsapp,
-            sections_config: sections_config, // Store as map in Firebase
-            about_content, stories_content, purchase_process_content,
-            updated_at: new Date().toISOString()
-        }, { merge: true })
-            .then(() => res.json({ message: 'Configuración actualizada' }))
-            .catch(err => res.status(500).json({ error: err.message }));
-        return;
+        try {
+            const updates = {};
+            if (shop_name !== undefined) updates.shop_name = shop_name;
+            if (logo_url !== undefined) updates.logo_url = logo_url;
+            if (banner_url !== undefined) updates.banner_url = banner_url;
+            if (footer_text !== undefined) updates.footer_text = footer_text;
+            if (contact_email !== undefined) updates.contact_email = contact_email;
+            if (contact_phone !== undefined) updates.contact_phone = contact_phone;
+            if (address !== undefined) updates.address = address;
+            if (social_instagram !== undefined) updates.social_instagram = social_instagram;
+            if (social_facebook !== undefined) updates.social_facebook = social_facebook;
+            if (social_whatsapp !== undefined) updates.social_whatsapp = social_whatsapp;
+            if (about_content !== undefined) updates.about_content = about_content;
+            if (stories_content !== undefined) updates.stories_content = stories_content;
+            if (purchase_process_content !== undefined) updates.purchase_process_content = purchase_process_content;
+
+            if (sections_config !== undefined) {
+                updates.sections_config = typeof sections_config === 'string'
+                    ? JSON.parse(sections_config)
+                    : sections_config;
+            }
+
+            updates.updated_at = new Date().toISOString();
+
+            await db.collection('shop_settings').doc('default').set(updates, { merge: true });
+            return res.json({ message: 'Configuración actualizada' });
+        } catch (err) {
+            console.error('[SETTINGS UPDATE ERROR]', err);
+            return res.status(500).json({ error: err.message });
+        }
     }
 
-    db.run(`UPDATE shop_settings SET 
-        shop_name = ?, logo_url = ?, banner_url = ?, footer_text = ?, 
-        contact_email = ?, contact_phone = ?, address = ?, 
-        social_instagram = ?, social_facebook = ?, social_whatsapp = ?, 
-        sections_config = ?, about_content = ?, stories_content = ?, purchase_process_content = ? 
-        WHERE id = (SELECT id FROM shop_settings ORDER BY id DESC LIMIT 1)`,
-        [shop_name, logo_url, banner_url, footer_text,
-            contact_email, contact_phone, address,
-            social_instagram, social_facebook, social_whatsapp,
-            sectionsStr, about_content, stories_content, purchase_process_content],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'Configuración actualizada con éxito' });
+    const sectionsStr = typeof sections_config === 'string' ? sections_config : JSON.stringify(sections_config);
+
+    db.get('SELECT id FROM shop_settings ORDER BY id DESC LIMIT 1', (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        if (!row) {
+            // If no settings exist, insert instead of update
+            db.run(`INSERT INTO shop_settings 
+                (shop_name, logo_url, banner_url, footer_text, contact_email, contact_phone, address, 
+                social_instagram, social_facebook, social_whatsapp, sections_config, about_content, stories_content, purchase_process_content) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [shop_name, logo_url, banner_url, footer_text, contact_email, contact_phone, address,
+                    social_instagram, social_facebook, social_whatsapp, sectionsStr, about_content, stories_content, purchase_process_content],
+                function (err) {
+                    if (err) return res.status(500).json({ error: err.message });
+                    res.json({ message: 'Configuración creada con éxito' });
+                }
+            );
+        } else {
+            db.run(`UPDATE shop_settings SET 
+                shop_name = ?, logo_url = ?, banner_url = ?, footer_text = ?, 
+                contact_email = ?, contact_phone = ?, address = ?, 
+                social_instagram = ?, social_facebook = ?, social_whatsapp = ?, 
+                sections_config = ?, about_content = ?, stories_content = ?, purchase_process_content = ? 
+                WHERE id = ?`,
+                [shop_name, logo_url, banner_url, footer_text,
+                    contact_email, contact_phone, address,
+                    social_instagram, social_facebook, social_whatsapp,
+                    sectionsStr, about_content, stories_content, purchase_process_content, row.id],
+                function (err) {
+                    if (err) return res.status(500).json({ error: err.message });
+                    res.json({ message: 'Configuración actualizada con éxito' });
+                }
+            );
         }
-    );
+    });
 });
 
 module.exports = router;

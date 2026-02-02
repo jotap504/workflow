@@ -16,6 +16,9 @@ const adminRoutes = require('./routes/admin');
 app.use(cors());
 app.use(express.json());
 
+const shopRoutes = require('./routes/shop');
+const productRoutes = require('./routes/products');
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
@@ -27,9 +30,9 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/accounting', require('./routes/accounting'));
 app.use('/api/clients', require('./routes/clients'));
-app.use('/api/shop/checkout', require('./routes/shop')); // Orders and access
-app.use('/api/shop', require('./routes/products')); // Products management
-// app.use('/api/users', require('./routes/users'));
+app.use('/api/upload', require('./routes/upload'));
+app.use('/api/shop', shopRoutes);     // Handles /settings, /checkout, etc.
+app.use('/api/shop', productRoutes);  // Handles / and /:id
 
 // Static Uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

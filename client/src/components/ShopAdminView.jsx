@@ -26,6 +26,39 @@ const ShopAdminView = () => {
         purchase_process_content: ''
     });
 
+    const [uploading, setUploading] = useState(false);
+
+    const handleImageUpload = async (file, target, isSetting = false) => {
+        if (!file) return;
+        setUploading(true);
+        const token = localStorage.getItem('token');
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            if (response.ok) {
+                const data = await response.json();
+                if (isSetting) {
+                    setSettings(prev => ({ ...prev, [target]: data.url }));
+                } else {
+                    setFormData(prev => ({ ...prev, [target]: data.url }));
+                }
+                toast.success('Imagen subida correctamente');
+            } else {
+                toast.error('Error al subir imagen');
+            }
+        } catch (error) {
+            toast.error('Error de red al subir imagen');
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -301,15 +334,21 @@ const ShopAdminView = () => {
                                         </select>
                                     </div>
                                     <div>
-                                        <label style={{ display: 'block', fontSize: '0.85rem', opacity: 0.7, marginBottom: '6px' }}>URL de Imagen</label>
-                                        <input
-                                            type="text"
-                                            className="glass-input"
-                                            value={formData.image_url}
-                                            onChange={e => setFormData({ ...formData, image_url: e.target.value })}
-                                            placeholder="https://..."
-                                            style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--card-border)', color: 'white' }}
-                                        />
+                                        <label style={{ display: 'block', fontSize: '0.85rem', opacity: 0.7, marginBottom: '6px' }}>Imagen del Producto</label>
+                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                            <input
+                                                type="text"
+                                                className="glass-input"
+                                                value={formData.image_url}
+                                                onChange={e => setFormData({ ...formData, image_url: e.target.value })}
+                                                placeholder="URL o sube una imagen"
+                                                style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--card-border)', color: 'white' }}
+                                            />
+                                            <label className="btn-primary" style={{ padding: '10px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: uploading ? 0.5 : 1 }}>
+                                                <ImageIcon size={20} />
+                                                <input type="file" hidden onChange={e => handleImageUpload(e.target.files[0], 'image_url')} accept="image/*" disabled={uploading} />
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                                 <div style={{ marginTop: '1.5rem' }}>
@@ -429,31 +468,41 @@ const ShopAdminView = () => {
                                 />
                             </div>
                             <div>
-                                <label style={{ display: 'block', fontSize: '0.85rem', opacity: 0.7, marginBottom: '6px' }}>URL del Logo</label>
+                                <label style={{ display: 'block', fontSize: '0.85rem', opacity: 0.7, marginBottom: '6px' }}>Logo de la Tienda</label>
                                 <div style={{ display: 'flex', gap: '10px' }}>
                                     <input
                                         type="text"
                                         className="glass-input"
                                         value={settings.logo_url}
                                         onChange={e => setSettings({ ...settings, logo_url: e.target.value })}
-                                        placeholder="/logo.png o https://..."
+                                        placeholder="URL o sube una imagen"
                                         style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
                                     />
+                                    <label className="btn-primary" style={{ padding: '10px 15px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: uploading ? 0.5 : 1 }}>
+                                        <ImageIcon size={20} />
+                                        <input type="file" hidden onChange={e => handleImageUpload(e.target.files[0], 'logo_url', true)} accept="image/*" disabled={uploading} />
+                                    </label>
                                     <div style={{ width: '45px', height: '45px', borderRadius: '10px', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                                         {settings.logo_url ? <img src={settings.logo_url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="Logo" /> : <ImageIcon size={20} opacity={0.3} />}
                                     </div>
                                 </div>
                             </div>
                             <div>
-                                <label style={{ display: 'block', fontSize: '0.85rem', opacity: 0.7, marginBottom: '6px' }}>URL del Banner (Header Imagen)</label>
-                                <input
-                                    type="text"
-                                    className="glass-input"
-                                    value={settings.banner_url}
-                                    onChange={e => setSettings({ ...settings, banner_url: e.target.value })}
-                                    placeholder="https://..."
-                                    style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
-                                />
+                                <label style={{ display: 'block', fontSize: '0.85rem', opacity: 0.7, marginBottom: '6px' }}>Banner de la Tienda</label>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <input
+                                        type="text"
+                                        className="glass-input"
+                                        value={settings.banner_url}
+                                        onChange={e => setSettings({ ...settings, banner_url: e.target.value })}
+                                        placeholder="URL o sube una imagen"
+                                        style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
+                                    />
+                                    <label className="btn-primary" style={{ padding: '10px 15px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: uploading ? 0.5 : 1 }}>
+                                        <ImageIcon size={20} />
+                                        <input type="file" hidden onChange={e => handleImageUpload(e.target.files[0], 'banner_url', true)} accept="image/*" disabled={uploading} />
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
