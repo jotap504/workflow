@@ -25,21 +25,33 @@ router.post('/', verifyToken, upload.single('file'), async (req, res) => {
         const formData = new URLSearchParams();
 
         // High priority: ImgBB if API key provided
-        console.log('[DEBUG UPLOAD] IMGBB_API_KEY present:', !!process.env.IMGBB_API_KEY);
+        console.log('[DEBUG UPLOAD] Starting upload process for:', fileName);
+        console.log('[DEBUG UPLOAD] IMGBB_API_KEY status:', process.env.IMGBB_API_KEY ? 'FOUND (starts with ' + process.env.IMGBB_API_KEY.substring(0, 4) + '...)' : 'MISSING');
+
         if (process.env.IMGBB_API_KEY) {
             try {
+                console.log('[DEBUG UPLOAD] Attempting ImgBB upload...');
                 formData.append('image', req.file.buffer.toString('base64'));
-                const imgbbResponse = await fetch(`https://api.imgbb.com/1/upload?key=${process.env.IMGBB_API_KEY}`, {
+                const imgbbResponse = await fetch(`https://api.imgbb.com/1/upload?key=${process.env.IMGBB_API_KEY.trim()}`, {
                     method: 'POST',
                     body: formData
                 });
+
                 const imgbbData = await imgbbResponse.json();
+                console.log('[DEBUG UPLOAD] ImgBB status code:', imgbbResponse.status);
+
                 if (imgbbData.success) {
+                    console.log('[DEBUG UPLOAD] ImgBB SUCCESS:', imgbbData.data.url);
                     return res.json({ url: imgbbData.data.url });
+                } else {
+                    console.error('[DEBUG UPLOAD] ImgBB API error response:', JSON.stringify(imgbbData));
                 }
             } catch (err) {
-                console.error('[UPLOAD] ImgBB failed:', err.message);
+                console.error('[DEBUG UPLOAD] ImgBB exception:', err.message);
+                if (err.stack) console.error(err.stack);
             }
+        } else {
+            console.warn('[DEBUG UPLOAD] Skipping ImgBB because IMGBB_API_KEY is not defined in process.env');
         }
 
         if (db.isFirebase) {
