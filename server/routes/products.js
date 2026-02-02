@@ -45,7 +45,7 @@ router.post('/', verifyToken, isAdmin, (req, res) => {
 });
 
 // Admin: Update product
-router.put('/:id', authenticateToken, isAdmin, (req, res) => {
+router.put('/:id', verifyToken, isAdmin, (req, res) => {
     const { name, description, price, type, image_url, category, active } = req.body;
     const query = `UPDATE products SET 
                   name = COALESCE(?, name),
