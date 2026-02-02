@@ -2,14 +2,126 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart, ShoppingBag, X, Plus, Minus, Check, ArrowRight, BookOpen, Package, Trash2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+
+const CustomerAuthModal = ({ isOpen, onClose, onSuccess }) => {
+    const { login, register } = useAuth();
+    const [isRegister, setIsRegister] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState({ email: '', password: '', username: '' });
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const result = isRegister
+                ? await register(formData.email, formData.password, formData.username, 'customer')
+                : await login(formData.email, formData.password);
+
+            if (result.success) {
+                toast.success(isRegister ? 'Cuenta creada con éxito' : 'Bienvenido de nuevo');
+                onSuccess();
+                onClose();
+            } else {
+                toast.error(result.error || 'Error en la autenticación');
+            }
+        } catch (error) {
+            toast.error('Error inesperado');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <AnimatePresence>
+            <div style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={onClose}
+                    style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)' }}
+                />
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    className="glass-panel"
+                    style={{ width: 'min(100%, 400px)', padding: '2.5rem', position: 'relative', zIndex: 2001 }}
+                >
+                    <button onClick={onClose} style={{ position: 'absolute', top: '20px', right: '20px', background: 'transparent' }}><X size={20} /></button>
+
+                    <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                        <div style={{ width: '60px', height: '60px', borderRadius: '15px', background: 'linear-gradient(45deg, #6366f1, #ec4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', margin: '0 auto 1rem' }}>
+                            <User size={30} />
+                        </div>
+                        <h2 style={{ margin: 0 }}>{isRegister ? 'Crear Cuenta' : 'Iniciar Sesión'}</h2>
+                        <p style={{ opacity: 0.6, fontSize: '0.9rem', marginTop: '5px' }}>Necesitas una cuenta de cliente para comprar.</p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                        {isRegister && (
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '8px' }}>Nombre de Usuario</label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="glass-input"
+                                    value={formData.username}
+                                    onChange={e => setFormData({ ...formData, username: e.target.value })}
+                                    style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
+                                />
+                            </div>
+                        )}
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '8px' }}>Email</label>
+                            <input
+                                type="email"
+                                required
+                                className="glass-input"
+                                value={formData.email}
+                                onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
+                            />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '8px' }}>Contraseña</label>
+                            <input
+                                type="password"
+                                required
+                                className="glass-input"
+                                value={formData.password}
+                                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
+                            />
+                        </div>
+                        <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', padding: '15px', borderRadius: '12px', fontWeight: '700', marginTop: '1rem' }}>
+                            {loading ? 'Procesando...' : isRegister ? 'Registrarse' : 'Entrar'}
+                        </button>
+                    </form>
+
+                    <button
+                        onClick={() => setIsRegister(!isRegister)}
+                        style={{ width: '100%', marginTop: '1.5rem', background: 'transparent', fontSize: '0.9rem', opacity: 0.7 }}
+                    >
+                        {isRegister ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate'}
+                    </button>
+                </motion.div>
+            </div>
+        </AnimatePresence>
+    );
+};
 
 const PublicStorefront = () => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const { cart, addToCart, removeFromCart, updateQuantity, cartTotal, cartCount, clearCart } = useCart();
+    const { user, logout } = useAuth();
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [checkoutStep, setCheckoutStep] = useState('cart'); // cart, info, payment, success
     const [customerData, setCustomerData] = useState({ name: '', email: '' });
     const [selectedProduct, setSelectedProduct] = useState(null);
@@ -92,13 +204,36 @@ const PublicStorefront = () => {
                 </div>
 
                 <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                    {localStorage.getItem('token') && (
+                    {user ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            <div style={{ textAlign: 'right', display: 'none', sm: 'block' }}>
+                                <div style={{ fontSize: '0.85rem', fontWeight: '700' }}>{user.username}</div>
+                                <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>Cliente</div>
+                            </div>
+                            <button
+                                onClick={logout}
+                                className="glass-panel"
+                                style={{ padding: '8px 12px', color: '#ef4444', fontSize: '0.8rem' }}
+                            >
+                                Salir
+                            </button>
+                            {user.role === 'admin' && (
+                                <button
+                                    onClick={() => navigate('/hub')}
+                                    className="glass-panel"
+                                    style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--primary-color)' }}
+                                >
+                                    Hub
+                                </button>
+                            )}
+                        </div>
+                    ) : (
                         <button
-                            onClick={() => navigate('/hub')}
+                            onClick={() => setIsAuthModalOpen(true)}
                             className="glass-panel"
-                            style={{ padding: '10px 20px', fontWeight: '600', color: 'var(--primary-color)' }}
+                            style={{ padding: '10px 20px', fontWeight: '600' }}
                         >
-                            Ir al Hub
+                            Iniciar Sesión
                         </button>
                     )}
                     <button
@@ -429,7 +564,14 @@ const PublicStorefront = () => {
 
                                     {checkoutStep === 'cart' ? (
                                         <button
-                                            onClick={() => setCheckoutStep('info')}
+                                            onClick={() => {
+                                                if (!user) {
+                                                    setIsAuthModalOpen(true);
+                                                } else {
+                                                    setCheckoutStep('info');
+                                                    setCustomerData({ name: user.username, email: user.email || '' });
+                                                }
+                                            }}
                                             className="btn-primary"
                                             style={{ width: '100%', borderRadius: '12px', padding: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', fontWeight: '600' }}
                                         >
@@ -476,31 +618,29 @@ const PublicStorefront = () => {
             {/* Product Detail Modal */}
             <AnimatePresence>
                 {selectedProduct && (
-                    <>
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setSelectedProduct(null)}
-                            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', zIndex: 1100 }}
+                            style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(15px)' }}
                         />
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            initial={{ opacity: 0, scale: 0.9, y: 50 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 50 }}
                             className="glass-panel"
                             style={{
-                                position: 'fixed',
-                                top: '50%',
-                                left: '50%',
-                                transform: 'translate(-50%, -50%)',
-                                width: 'min(90%, 800px)',
-                                maxHeight: '90vh',
+                                width: 'min(95%, 900px)',
+                                maxHeight: 'min(90vh, 600px)',
                                 zIndex: 1101,
                                 padding: 0,
                                 overflow: 'hidden',
                                 display: 'grid',
-                                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))'
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                                position: 'relative',
+                                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
                             }}
                         >
                             <button
@@ -573,9 +713,19 @@ const PublicStorefront = () => {
                                 </div>
                             </div>
                         </motion.div>
-                    </>
+                    </div>
                 )}
             </AnimatePresence>
+
+            <CustomerAuthModal
+                isOpen={isAuthModalOpen}
+                onClose={() => setIsAuthModalOpen(false)}
+                onSuccess={() => {
+                    if (checkoutStep === 'cart' && isCartOpen) {
+                        setCheckoutStep('info');
+                    }
+                }}
+            />
 
         </div>
     );

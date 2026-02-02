@@ -70,12 +70,31 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const register = async (email, password, username, role = 'user') => {
+        try {
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, username, role }),
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Registration failed');
+
+            // After registration, log them in
+            return await login(email, password);
+        } catch (error) {
+            console.error('Registration Error:', error);
+            return { success: false, error: error.message };
+        }
+    };
+
     const logout = async () => {
         await signOut(firebaseAuth);
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, register, logout, loading }}>
             {children}
         </AuthContext.Provider>
     );
