@@ -14,12 +14,13 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
 
         if (!admin.apps.length) {
             console.log(`[FIREBASE] Initializing for project: ${serviceAccount.project_id}`);
+            const bucketName = process.env.FIREBASE_STORAGE_BUCKET || `${serviceAccount.project_id}.appspot.com`;
             admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount),
                 projectId: serviceAccount.project_id,
-                storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${serviceAccount.project_id}.appspot.com`
+                storageBucket: bucketName
             });
-            console.log('[FIREBASE] Initialization successful');
+            console.log(`[FIREBASE] Initialization successful. Using storage bucket: ${bucketName}`);
         }
     } catch (error) {
         console.error('[FIREBASE] CRITICAL: Failed to parse or initialize with service account:', error.message);
