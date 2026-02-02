@@ -155,6 +155,25 @@ const HubView = () => {
                                 </div>
                             )}
 
+                            {auth && app.id === 'shop' && (
+                                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); navigate('/store'); }}
+                                        className="btn-primary"
+                                        style={{ flex: 1, fontSize: '0.75rem', padding: '6px', borderRadius: '8px' }}
+                                    >
+                                        Ver Tienda
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); navigate('/shop'); }}
+                                        className="glass-panel"
+                                        style={{ flex: 1, fontSize: '0.75rem', padding: '6px', borderRadius: '8px', border: '1px solid var(--primary-color)33' }}
+                                    >
+                                        Gestión
+                                    </button>
+                                </div>
+                            )}
+
                             {!auth && app.id !== 'admin' && (
                                 <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: 'auto' }}>
                                     {app.locked ? 'Próximamente' : 'No disponible en tu plan'}
