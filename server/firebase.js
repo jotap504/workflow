@@ -16,7 +16,8 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
             console.log(`[FIREBASE] Initializing for project: ${serviceAccount.project_id}`);
             admin.initializeApp({
                 credential: admin.credential.cert(serviceAccount),
-                projectId: serviceAccount.project_id
+                projectId: serviceAccount.project_id,
+                storageBucket: `${serviceAccount.project_id}.appspot.com`
             });
             console.log('[FIREBASE] Initialization successful');
         }

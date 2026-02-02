@@ -598,8 +598,16 @@ const ShopAdminView = () => {
                                 <input type="text" className="glass-input" value={settings.social_whatsapp} onChange={e => setSettings({ ...settings, social_whatsapp: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }} />
                             </div>
                             <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', opacity: 0.7, marginBottom: '6px' }}>Teléfono de Contacto</label>
+                                <input type="text" className="glass-input" value={settings.contact_phone} onChange={e => setSettings({ ...settings, contact_phone: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }} />
+                            </div>
+                            <div>
                                 <label style={{ display: 'block', fontSize: '0.85rem', opacity: 0.7, marginBottom: '6px' }}>Email de Contacto</label>
                                 <input type="email" className="glass-input" value={settings.contact_email} onChange={e => setSettings({ ...settings, contact_email: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', opacity: 0.7, marginBottom: '6px' }}>Dirección / Ubicación</label>
+                                <input type="text" className="glass-input" value={settings.address} onChange={e => setSettings({ ...settings, address: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }} />
                             </div>
                         </div>
                     </div>
