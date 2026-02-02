@@ -21,7 +21,7 @@ import ShopAdminView from './components/ShopAdminView'
 import PublicStorefront from './components/PublicStorefront'
 import NotificationBell from './components/NotificationBell';
 
-import { LayoutDashboard, Calendar, Vote, BarChart, Users, LogOut, Moon, Sun, User, Layers, Menu, X, LayoutGrid } from 'lucide-react';
+import { LayoutDashboard, Calendar, Vote, BarChart, Users, LogOut, Moon, Sun, User, Layers, Menu, X, LayoutGrid, ShoppingCart } from 'lucide-react';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
