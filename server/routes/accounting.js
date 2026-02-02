@@ -46,9 +46,18 @@ router.get('/entities', async (req, res) => {
 
 // Create/Update Entity
 router.post('/entities', async (req, res) => {
-    const { id, name, type, cuit, email } = req.body;
+    const { id, name, type, cuit, email, phone, address, hubClientId } = req.body;
     try {
-        const entityData = { name, type, cuit, email, updated_at: new Date().toISOString() };
+        const entityData = { 
+            name, 
+            type, 
+            cuit: cuit || '', 
+            email: email || '', 
+            phone: phone || '', 
+            address: address || '',
+            hubClientId: hubClientId || null,
+            updated_at: new Date().toISOString() 
+        };
         if (id) {
             await db.collection('accounting_entities').doc(id).update(entityData);
         } else {
@@ -60,6 +69,50 @@ router.post('/entities', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+// Get Entity Statement (Resumen de Cuenta)
+router.get('/entities/:id/statement', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const snapshot = await db.collection('accounting_entries').get();
+        const statement = [];
+        let balance = 0;
+
+        // Filter and process entries that involve this entity
+        snapshot.docs.forEach(doc => {
+            const entry = doc.data();
+            const relevantItems = entry.items.filter(item => item.entityId === id);
+            
+            if (relevantItems.length > 0) {
+                const totalDebit = relevantItems.reduce((s, i) => s + (parseFloat(i.debit) || 0), 0);
+                const totalCredit = relevantItems.reduce((s, i) => s + (parseFloat(i.credit) || 0), 0);
+                const net = totalDebit - totalCredit;
+                balance += net;
+
+                statement.push({
+                    id: doc.id,
+                    date: entry.date,
+                    description: entry.description,
+                    debit: totalDebit,
+                    credit: totalCredit,
+                    balance: balance
+                });
+            }
+        });
+
+        // Sort by date
+        statement.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        res.json({
+            entityId: id,
+            currentBalance: balance,
+            items: statement
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 // --- COST CENTERS ---
 
