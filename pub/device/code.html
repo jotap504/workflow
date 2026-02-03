@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Device Configuration</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#007AFF",
+            "bg-main": "#F2F2F7",
+            "bg-card": "#FFFFFF",
+            "text-main": "#1C1C1E",
+            "text-secondary": "#8E8E93",
+            "border-subtle": "#E5E5EA",
+          },
+          fontFamily: {
+            "sans": ["Inter", "system-ui", "-apple-system", "sans-serif"]
+          },
+          borderRadius: {
+            "ios": "12px",
+          }
+        },
+      },
+    }
+  </script>
+<style type="text/tailwindcss">
+    @layer base {
+      body {
+        @apply bg-bg-main text-text-main font-sans antialiased;
+      }
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+    }
+    .ios-switch {
+      @apply relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none;
+    }
+    .ios-slider {
+      @apply h-1 w-full bg-border-subtle rounded-full appearance-none cursor-pointer;
+    }
+    .ios-slider::-webkit-slider-thumb {
+      @apply appearance-none w-6 h-6 bg-white rounded-full shadow-md border border-gray-100;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="pb-12">
+<header class="sticky top-0 z-50 bg-bg-main/80 backdrop-blur-xl border-b border-border-subtle px-4 h-14 flex items-center justify-between">
+<button class="flex items-center text-primary">
+<span class="material-symbols-outlined text-[28px]">chevron_left</span>
+<span class="text-lg">Settings</span>
+</button>
+<h1 class="text-base font-semibold absolute left-1/2 -translate-x-1/2">Configuration</h1>
+<button class="text-primary font-medium text-lg">Save</button>
+</header>
+<main class="max-w-md mx-auto px-4 pt-6 space-y-6">
+<div class="flex items-center gap-4 bg-bg-card p-4 rounded-ios border border-border-subtle">
+<div class="size-16 rounded-xl bg-gray-50 flex items-center justify-center border border-border-subtle" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBXR-GV4gfJ01J342eQSyD13t-JXqCkzhJzAkazWnPMipzK2yj3OuLwnHQcR1Gqpl4xai9EUzExY5xn3dcW5P8qeG1Ohd4-HOyYjgrzgnfwEETo213BzMIivgQYE5hRpVfDqbkWTTbKLfXXoDCPtgcu4mUia_5reQc-dfeICeoytZcSDmpzCjkbwi-pBB6pDYKuV1jgzOYS_iU16Guqs3LsBx5af2HjYmqrAqEaGDRTYlvGwwQ3z2jXfrsmeyn4Bs9hK97FNtwwkro"); background-size: cover;'>
+<span class="material-symbols-outlined text-text-secondary text-3xl">qr_code_2</span>
+</div>
+<div>
+<h2 class="text-lg font-semibold tracking-tight">Terminal X1</h2>
+<p class="text-xs text-text-secondary">4829-0012-TX • Online</p>
+<div class="flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-xs text-green-500">battery_full_alt</span>
+<span class="text-[11px] text-text-secondary">92% Charged</span>
+</div>
+</div>
+</div>
+<section>
+<h3 class="px-1 mb-2 text-xs font-medium text-text-secondary uppercase tracking-wider">Device</h3>
+<div class="bg-bg-card rounded-ios border border-border-subtle divide-y divide-border-subtle overflow-hidden">
+<div class="p-4 space-y-3">
+<div class="flex justify-between items-center">
+<span class="text-[15px] font-medium">Alert Volume</span>
+<span class="text-sm text-text-secondary">70%</span>
+</div>
+<input class="ios-slider" type="range" value="70"/>
+</div>
+<div class="p-4 space-y-3">
+<div class="flex justify-between items-center">
+<span class="text-[15px] font-medium">Screen Brightness</span>
+<span class="text-sm text-text-secondary">85%</span>
+</div>
+<input class="ios-slider" type="range" value="85"/>
+</div>
+<div class="flex items-center justify-between p-4">
+<span class="text-[15px] font-medium">Auto-Update</span>
+<button class="ios-switch bg-primary">
+<span class="translate-x-5 inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out mt-0.5 ml-0.5"></span>
+</button>
+</div>
+</div>
+</section>
+<section>
+<h3 class="px-1 mb-2 text-xs font-medium text-text-secondary uppercase tracking-wider">Security</h3>
+<div class="bg-bg-card rounded-ios border border-border-subtle divide-y divide-border-subtle overflow-hidden">
+<div class="p-4 flex flex-col gap-1">
+<label class="text-[11px] font-medium text-text-secondary">Access Token</label>
+<div class="flex items-center justify-between">
+<input class="p-0 border-none bg-transparent focus:ring-0 text-[15px] w-full" readonly="" type="password" value="••••••••••••"/>
+<span class="material-symbols-outlined text-primary text-xl ml-2 cursor-pointer">content_copy</span>
+</div>
+</div>
+<div class="p-4 flex flex-col gap-1">
+<label class="text-[11px] font-medium text-text-secondary">API Key (Prod)</label>
+<div class="flex items-center justify-between">
+<input class="p-0 border-none bg-transparent focus:ring-0 text-[15px] w-full truncate" readonly="" type="text" value="APP_USR-72819-MKZ-9021"/>
+<span class="material-symbols-outlined text-primary text-xl ml-2 cursor-pointer">content_copy</span>
+</div>
+</div>
+<div class="flex items-center justify-between p-4">
+<span class="text-[15px] font-medium">Refund PIN</span>
+<button class="ios-switch bg-gray-200">
+<span class="translate-x-0 inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out mt-0.5 ml-0.5"></span>
+</button>
+</div>
+</div>
+</section>
+<section>
+<h3 class="px-1 mb-2 text-xs font-medium text-text-secondary uppercase tracking-wider">Payment Provider</h3>
+<div class="bg-bg-card rounded-ios border border-border-subtle divide-y divide-border-subtle overflow-hidden">
+<div class="p-4 flex gap-4">
+<div class="flex-1">
+<label class="text-[11px] font-medium text-text-secondary block mb-1">Store ID</label>
+<input class="w-full bg-gray-50 border border-border-subtle rounded-lg px-3 py-2 text-[15px] focus:ring-1 focus:ring-primary focus:border-primary" type="text" value="ST-99201"/>
+</div>
+<div class="flex-1">
+<label class="text-[11px] font-medium text-text-secondary block mb-1">POS ID</label>
+<input class="w-full bg-gray-50 border border-border-subtle rounded-lg px-3 py-2 text-[15px] focus:ring-1 focus:ring-primary focus:border-primary" type="text" value="POS-01"/>
+</div>
+</div>
+<div class="flex items-center justify-between p-4 bg-blue-50/30">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">biotech</span>
+<span class="text-[15px] font-medium">Sandbox Mode</span>
+</div>
+<button class="ios-switch bg-gray-200">
+<span class="translate-x-0 inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out mt-0.5 ml-0.5"></span>
+</button>
+</div>
+</div>
+<button class="w-full mt-4 py-3 bg-bg-card border border-border-subtle text-primary font-medium rounded-ios hover:bg-gray-50 transition-colors">
+        Test Connection
+      </button>
+</section>
+<div class="pt-8 pb-4 text-center">
+<button class="text-red-500 text-[15px] font-medium">Factory Reset Device</button>
+<div class="mt-4 text-[11px] text-text-secondary space-y-1">
+<p>Firmware Version: 2.4.1-build-88</p>
+<p>© 2024 Integrator Solutions</p>
+</div>
+</div>
+</main>
+
+</body></html>

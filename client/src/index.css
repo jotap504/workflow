@@ -39,6 +39,7 @@ body {
   color: var(--text-color);
   transition: background-color 0.3s ease, color 0.3s ease;
   min-height: 100vh;
+  font-size: 0.9rem;
   background-image:
     radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
     radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.15) 0px, transparent 50%);
@@ -58,8 +59,8 @@ button {
   cursor: pointer;
   border: none;
   border-radius: 8px;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
+  padding: 0.4em 1em;
+  font-size: 0.85rem;
   font-weight: 500;
   font-family: inherit;
   transition: all 0.25s;

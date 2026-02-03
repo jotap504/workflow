@@ -84,11 +84,11 @@ const HubView = () => {
                 gap: '1.5rem'
             }}>
                 <div>
-                    <h1 style={{ fontSize: window.innerWidth < 640 ? '1.5rem' : '2.5rem', fontWeight: '800', margin: 0, background: 'linear-gradient(90deg, #6366f1, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Bprocess</h1>
-                    <p style={{ opacity: 0.8, fontSize: '1rem', fontWeight: '500' }}>Vivir abundantemente haciendo lo que amás</p>
-                    <p style={{ opacity: 0.5, fontSize: '0.85rem' }}>Bienvenido de nuevo, {user?.username}</p>
+                    <h1 style={{ fontSize: window.innerWidth < 640 ? '1.1rem' : '1.75rem', fontWeight: '800', margin: 0, background: 'linear-gradient(90deg, #6366f1, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Bprocess</h1>
+                    <p style={{ opacity: 0.8, fontSize: '0.75rem', fontWeight: '500' }}>Vivir abundantemente haciendo lo que amás</p>
+                    <p style={{ opacity: 0.5, fontSize: '0.65rem' }}>Bienvenido de nuevo, {user?.username}</p>
                 </div>
-                <button onClick={logout} className="glass-panel" style={{ padding: '8px 20px', color: '#ef4444', border: '1px solid #ef444433', cursor: 'pointer', borderRadius: '12px', fontWeight: '600' }}>
+                <button onClick={logout} className="glass-panel" style={{ padding: '5px 12px', color: '#ef4444', border: '1px solid #ef444433', cursor: 'pointer', borderRadius: '10px', fontWeight: '600', fontSize: '0.75rem' }}>
                     Cerrar Sesión
                 </button>
             </header>
@@ -145,13 +145,13 @@ const HubView = () => {
                             </div>
 
                             <div>
-                                <h3 style={{ margin: '0 0 0.5rem 0', color: auth ? 'inherit' : '#94a3b8' }}>{app.name}</h3>
-                                <p style={{ fontSize: '0.9rem', opacity: 0.7, margin: 0 }}>{app.description}</p>
+                                <h3 style={{ margin: '0 0 0.3rem 0', color: auth ? 'inherit' : '#94a3b8', fontSize: '0.9rem' }}>{app.name}</h3>
+                                <p style={{ fontSize: '0.7rem', opacity: 0.7, margin: 0 }}>{app.description}</p>
                             </div>
 
                             {auth && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: app.color, marginTop: 'auto', fontWeight: '600', fontSize: '0.9rem' }}>
-                                    Abrir herramienta <ArrowRight size={16} />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: app.color, marginTop: 'auto', fontWeight: '600', fontSize: '0.7rem' }}>
+                                    Abrir herramienta <ArrowRight size={14} />
                                 </div>
                             )}
 

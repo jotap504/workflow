@@ -254,20 +254,20 @@ const PublicStorefront = () => {
                             <ShoppingBag size={24} />
                         </div>
                     )}
-                    <h1 style={{ fontSize: '1.5rem', margin: 0, fontWeight: '800' }}>{settings.shop_name}</h1>
+                    <h1 style={{ fontSize: '1rem', margin: 0, fontWeight: '800' }}>{settings.shop_name}</h1>
                 </div>
 
                 <nav className="desktop-nav" style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
                     <button
                         onClick={() => scrollToSection('shop')}
-                        style={{ background: 'transparent', fontWeight: activeSection === 'shop' ? '700' : '500', color: activeSection === 'shop' ? 'var(--primary-color)' : 'inherit', border: 'none', cursor: 'pointer', fontSize: '0.95rem' }}
+                        style={{ background: 'transparent', fontWeight: activeSection === 'shop' ? '700' : '500', color: activeSection === 'shop' ? 'var(--primary-color)' : 'inherit', border: 'none', cursor: 'pointer', fontSize: '0.7rem' }}
                     >
                         Tienda
                     </button>
                     {settings.sections_config.about && (
                         <button
                             onClick={() => scrollToSection('about')}
-                            style={{ background: 'transparent', fontWeight: activeSection === 'about' ? '700' : '500', color: activeSection === 'about' ? 'var(--primary-color)' : 'inherit', border: 'none', cursor: 'pointer', fontSize: '0.95rem' }}
+                            style={{ background: 'transparent', fontWeight: activeSection === 'about' ? '700' : '500', color: activeSection === 'about' ? 'var(--primary-color)' : 'inherit', border: 'none', cursor: 'pointer', fontSize: '0.7rem' }}
                         >
                             Nosotros
                         </button>
@@ -275,7 +275,7 @@ const PublicStorefront = () => {
                     {settings.sections_config.stories && (
                         <button
                             onClick={() => scrollToSection('stories')}
-                            style={{ background: 'transparent', fontWeight: activeSection === 'stories' ? '700' : '500', color: activeSection === 'stories' ? 'var(--primary-color)' : 'inherit', border: 'none', cursor: 'pointer', fontSize: '0.95rem' }}
+                            style={{ background: 'transparent', fontWeight: activeSection === 'stories' ? '700' : '500', color: activeSection === 'stories' ? 'var(--primary-color)' : 'inherit', border: 'none', cursor: 'pointer', fontSize: '0.7rem' }}
                         >
                             Historias
                         </button>
@@ -283,7 +283,7 @@ const PublicStorefront = () => {
                     {settings.sections_config.purchase_process && (
                         <button
                             onClick={() => scrollToSection('process')}
-                            style={{ background: 'transparent', fontWeight: activeSection === 'process' ? '700' : '500', color: activeSection === 'process' ? 'var(--primary-color)' : 'inherit', border: 'none', cursor: 'pointer', fontSize: '0.95rem' }}
+                            style={{ background: 'transparent', fontWeight: activeSection === 'process' ? '700' : '500', color: activeSection === 'process' ? 'var(--primary-color)' : 'inherit', border: 'none', cursor: 'pointer', fontSize: '0.7rem' }}
                         >
                             ¿Cómo Comprar?
                         </button>
@@ -291,7 +291,7 @@ const PublicStorefront = () => {
                     {settings.sections_config.contact && (
                         <button
                             onClick={() => scrollToSection('contact')}
-                            style={{ background: 'transparent', fontWeight: activeSection === 'contact' ? '700' : '500', color: activeSection === 'contact' ? 'var(--primary-color)' : 'inherit', border: 'none', cursor: 'pointer', fontSize: '0.95rem' }}
+                            style={{ background: 'transparent', fontWeight: activeSection === 'contact' ? '700' : '500', color: activeSection === 'contact' ? 'var(--primary-color)' : 'inherit', border: 'none', cursor: 'pointer', fontSize: '0.7rem' }}
                         >
                             Contacto
                         </button>
@@ -308,7 +308,7 @@ const PublicStorefront = () => {
                             <button
                                 onClick={logout}
                                 className="glass-panel"
-                                style={{ padding: '8px 12px', color: '#ef4444', fontSize: '0.8rem' }}
+                                style={{ padding: '6px 10px', color: '#ef4444', fontSize: '0.7rem' }}
                             >
                                 Salir
                             </button>
@@ -316,7 +316,7 @@ const PublicStorefront = () => {
                                 <button
                                     onClick={() => navigate('/hub')}
                                     className="glass-panel"
-                                    style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--primary-color)' }}
+                                    style={{ padding: '6px 10px', fontWeight: '600', color: 'var(--primary-color)', fontSize: '0.75rem' }}
                                 >
                                     Hub
                                 </button>
@@ -326,7 +326,7 @@ const PublicStorefront = () => {
                         <button
                             onClick={() => setIsAuthModalOpen(true)}
                             className="glass-panel"
-                            style={{ padding: '10px 20px', fontWeight: '600' }}
+                            style={{ padding: '7px 14px', fontWeight: '600', fontSize: '0.75rem' }}
                         >
                             Iniciar Sesión
                         </button>
@@ -334,9 +334,9 @@ const PublicStorefront = () => {
                     <button
                         onClick={() => setIsCartOpen(true)}
                         className="glass-panel"
-                        style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '10px', position: 'relative' }}
+                        style={{ padding: '7px 14px', display: 'flex', alignItems: 'center', gap: '8px', position: 'relative', fontSize: '0.75rem' }}
                     >
-                        <ShoppingCart size={20} />
+                        <ShoppingCart size={16} />
                         <span style={{ fontWeight: '600', display: window.innerWidth < 768 ? 'none' : 'block' }}>Carrito</span>
                         {cartCount > 0 && (
                             <span style={{
@@ -380,11 +380,11 @@ const PublicStorefront = () => {
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: '900', marginBottom: '1rem', textShadow: '0 5px 15px rgba(0,0,0,0.5)' }}
+                            style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.8rem)', fontWeight: '900', marginBottom: '1rem', textShadow: '0 5px 15px rgba(0,0,0,0.5)' }}
                         >
                             {settings.shop_name}
                         </motion.h2>
-                        <p style={{ fontSize: '1.2rem', opacity: 0.9, maxWidth: '600px', margin: '0 auto', fontWeight: '500' }}>
+                        <p style={{ fontSize: '0.85rem', opacity: 0.9, maxWidth: '600px', margin: '0 auto', fontWeight: '500' }}>
                             Explora nuestra selección Premium de productos y servicios exclusivos.
                         </p>
                     </div>
@@ -460,8 +460,8 @@ const PublicStorefront = () => {
                                 </div>
 
                                 <div>
-                                    <h3 style={{ fontSize: '1.25rem', marginBottom: '8px' }}>{product.name}</h3>
-                                    <p style={{ fontSize: '0.9rem', opacity: 0.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', height: '2.7rem' }}>
+                                    <h3 style={{ fontSize: '0.85rem', marginBottom: '6px' }}>{product.name}</h3>
+                                    <p style={{ fontSize: '0.65rem', opacity: 0.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', height: '2rem' }}>
                                         {product.description || 'Sin descripción disponible.'}
                                     </p>
                                 </div>
@@ -473,12 +473,12 @@ const PublicStorefront = () => {
                                                 <span style={{ fontSize: '0.85rem', opacity: 0.5, textDecoration: 'line-through' }}>
                                                     ${product.price.toLocaleString()}
                                                 </span>
-                                                <span style={{ fontSize: '1.5rem', fontWeight: '800', color: '#ef4444' }}>
+                                                <span style={{ fontSize: '1.05rem', fontWeight: '800', color: '#ef4444' }}>
                                                     ${product.discount_price.toLocaleString()}
                                                 </span>
                                             </>
                                         ) : (
-                                            <span style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--primary-color)' }}>
+                                            <span style={{ fontSize: '1.05rem', fontWeight: '800', color: 'var(--primary-color)' }}>
                                                 ${product.price.toLocaleString()}
                                             </span>
                                         )}
@@ -495,11 +495,12 @@ const PublicStorefront = () => {
                                         className="btn-primary"
                                         disabled={product.stock <= 0}
                                         style={{
-                                            borderRadius: '10px',
-                                            padding: '8px 16px',
+                                            borderRadius: '8px',
+                                            padding: '6px 12px',
                                             display: 'flex',
                                             alignItems: 'center',
-                                            gap: '8px',
+                                            gap: '6px',
+                                            fontSize: '0.75rem',
                                             opacity: product.stock <= 0 ? 0.5 : 1,
                                             cursor: product.stock <= 0 ? 'not-allowed' : 'pointer',
                                             filter: product.stock <= 0 ? 'grayscale(1)' : 'none'
@@ -523,10 +524,10 @@ const PublicStorefront = () => {
                         className="glass-panel"
                         style={{ padding: window.innerWidth < 768 ? '2rem 1.5rem' : '4rem', maxWidth: '1000px', margin: '0 auto', width: '100%' }}
                     >
-                        <h2 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <h2 style={{ fontSize: '1.6rem', fontWeight: '900', marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <Heart className="text-primary" /> Quiénes Somos
                         </h2>
-                        <div style={{ fontSize: '1.2rem', lineHeight: '1.8', opacity: 0.8, whiteSpace: 'pre-wrap' }}>
+                        <div style={{ fontSize: '0.85rem', lineHeight: '1.6', opacity: 0.8, whiteSpace: 'pre-wrap' }}>
                             {settings.about_content || 'Contenido no disponible.'}
                         </div>
                     </motion.section>
@@ -542,10 +543,10 @@ const PublicStorefront = () => {
                         className="glass-panel"
                         style={{ padding: window.innerWidth < 768 ? '2rem 1.5rem' : '4rem', maxWidth: '1000px', margin: '0 auto', width: '100%' }}
                     >
-                        <h2 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <h2 style={{ fontSize: '1.6rem', fontWeight: '900', marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <BookOpen className="text-primary" /> Historias y Comunidad
                         </h2>
-                        <div style={{ fontSize: '1.2rem', lineHeight: '1.8', opacity: 0.8, whiteSpace: 'pre-wrap' }}>
+                        <div style={{ fontSize: '0.85rem', lineHeight: '1.6', opacity: 0.8, whiteSpace: 'pre-wrap' }}>
                             {settings.stories_content || 'Aún no hay historias para compartir.'}
                         </div>
                     </motion.section>
@@ -561,10 +562,10 @@ const PublicStorefront = () => {
                         className="glass-panel"
                         style={{ padding: window.innerWidth < 768 ? '2rem 1.5rem' : '4rem', maxWidth: '1000px', margin: '0 auto', width: '100%' }}
                     >
-                        <h2 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <h2 style={{ fontSize: '1.6rem', fontWeight: '900', marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <HelpCircle className="text-primary" /> Proceso de Compra
                         </h2>
-                        <div style={{ fontSize: '1.2rem', lineHeight: '1.8', opacity: 0.8, whiteSpace: 'pre-wrap' }}>
+                        <div style={{ fontSize: '0.85rem', lineHeight: '1.6', opacity: 0.8, whiteSpace: 'pre-wrap' }}>
                             {settings.purchase_process_content || 'Información sobre el proceso de compra disponible próximamente.'}
                         </div>
                     </motion.section>
@@ -580,8 +581,8 @@ const PublicStorefront = () => {
                         className="glass-panel"
                         style={{ padding: window.innerWidth < 768 ? '2rem 1.5rem' : '4rem', maxWidth: '800px', margin: '0 auto', textAlign: 'center', width: '100%' }}
                     >
-                        <h2 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '2rem' }}>Ponte en Contacto</h2>
-                        <p style={{ opacity: 0.7, marginBottom: '3rem' }}>¿Tienes alguna duda o necesitas asesoramiento? Estamos aquí para ayudarte.</p>
+                        <h2 style={{ fontSize: '1.75rem', fontWeight: '900', marginBottom: '1.5rem' }}>Ponte en Contacto</h2>
+                        <p style={{ opacity: 0.7, marginBottom: '2rem', fontSize: '0.85rem' }}>¿Tienes alguna duda o necesitas asesoramiento? Estamos aquí para ayudarte.</p>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                             {settings.contact_email && (
@@ -704,7 +705,7 @@ const PublicStorefront = () => {
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                                 <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
-                                    <ShoppingCart /> Tu Carrito
+                                    <ShoppingCart size={18} /> Tu Carrito
                                 </h2>
                                 <button onClick={() => { setIsCartOpen(false); setCheckoutStep('cart'); }} style={{ background: 'transparent', padding: '5px' }}><X size={24} /></button>
                             </div>
@@ -826,7 +827,7 @@ const PublicStorefront = () => {
 
                             {cart.length > 0 && checkoutStep !== 'success' && (
                                 <div style={{ borderTop: '1px solid var(--card-border)', paddingTop: '2rem', marginTop: 'auto' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', fontSize: '1.25rem', fontWeight: '800' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', fontSize: '1rem', fontWeight: '800' }}>
                                         <span>Total</span>
                                         <span style={{ color: 'var(--primary-color)' }}>${cartTotal.toLocaleString()}</span>
                                     </div>
@@ -941,10 +942,10 @@ const PublicStorefront = () => {
                                             </span>
                                         )}
                                     </div>
-                                    <h2 style={{ fontSize: '2rem', fontWeight: '900', margin: 0 }}>{selectedProduct.name}</h2>
+                                    <h2 style={{ fontSize: '1.4rem', fontWeight: '900', margin: 0 }}>{selectedProduct.name}</h2>
                                 </div>
 
-                                <p style={{ fontSize: '1.1rem', opacity: 0.7, lineHeight: '1.6', margin: 0 }}>
+                                <p style={{ fontSize: '0.8rem', opacity: 0.7, lineHeight: '1.5', margin: 0 }}>
                                     {selectedProduct.description || 'No hay una descripción detallada para este producto.'}
                                 </p>
 
@@ -960,7 +961,7 @@ const PublicStorefront = () => {
                                                 </span>
                                             </>
                                         ) : (
-                                            <span style={{ fontSize: '2.5rem', fontWeight: '900', color: 'var(--primary-color)' }}>
+                                            <span style={{ fontSize: '1.75rem', fontWeight: '900', color: 'var(--primary-color)' }}>
                                                 ${selectedProduct.price.toLocaleString()}
                                             </span>
                                         )}
@@ -975,7 +976,7 @@ const PublicStorefront = () => {
                                         }}
                                         disabled={selectedProduct.stock <= 0}
                                         className="btn-primary"
-                                        style={{ padding: '15px 30px', borderRadius: '14px', fontSize: '1.1rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '10px' }}
+                                        style={{ padding: '8px 16px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}
                                     >
                                         {selectedProduct.stock <= 0 ? 'Sin Stock' : <><Plus size={22} /> Añadir al Carrito</>}
                                     </button>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Minimalist Device Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-25..0&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6366f1",
+                        "soft-bg": "#f8fafc",
+                        "card-bg": "#ffffff",
+                    },
+                    fontFamily: {
+                        "sans": ["'Plus Jakarta Sans'", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "3xl": "24px",
+                        "4xl": "32px",
+                    },
+                    boxShadow: {
+                        'soft': '0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 4px 12px -4px rgba(0, 0, 0, 0.02)',
+                        'inner-soft': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
+                    }
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
+            font-size: 22px;
+        }
+        body {
+            background-color: #f8fafc;
+            background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.03) 0, transparent 50%), 
+                              radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.03) 0, transparent 50%);
+        }
+        .soft-card {
+            @apply bg-white rounded-3xl shadow-soft border border-white/60 backdrop-blur-sm transition-all duration-300;
+        }
+        .status-dot {
+            @apply size-2 rounded-full;
+            box-shadow: 0 0 8px currentColor;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen text-slate-800 font-sans">
+<header class="sticky top-0 z-50 bg-soft-bg/60 backdrop-blur-xl">
+<div class="flex items-center p-6 justify-between max-w-md mx-auto">
+<div class="flex size-10 items-center justify-center rounded-2xl bg-white shadow-soft">
+<span class="material-symbols-outlined text-slate-400">person</span>
+</div>
+<div class="text-center">
+<h1 class="text-sm font-medium text-slate-400 uppercase tracking-widest">Dashboard</h1>
+<p class="text-lg font-bold text-slate-900">Terminals</p>
+</div>
+<div class="flex size-10 items-center justify-center rounded-2xl bg-white shadow-soft">
+<span class="material-symbols-outlined text-slate-400">tune</span>
+</div>
+</div>
+</header>
+<main class="max-w-md mx-auto px-6 pb-32">
+<div class="grid grid-cols-3 gap-4 mb-8">
+<div class="soft-card p-4 flex flex-col items-center text-center">
+<span class="text-[10px] font-bold text-slate-400 uppercase mb-1">Total</span>
+<span class="text-xl font-bold text-slate-900">12</span>
+</div>
+<div class="soft-card p-4 flex flex-col items-center text-center">
+<div class="flex items-center gap-1.5 mb-1">
+<span class="status-dot bg-emerald-400 text-emerald-400"></span>
+<span class="text-[10px] font-bold text-slate-400 uppercase">Live</span>
+</div>
+<span class="text-xl font-bold text-slate-900">10</span>
+</div>
+<div class="soft-card p-4 flex flex-col items-center text-center">
+<div class="flex items-center gap-1.5 mb-1">
+<span class="status-dot bg-rose-400 text-rose-400"></span>
+<span class="text-[10px] font-bold text-slate-400 uppercase">Off</span>
+</div>
+<span class="text-xl font-bold text-slate-900">2</span>
+</div>
+</div>
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-sm font-bold text-slate-900 tracking-tight">Active Devices</h3>
+<button class="size-8 flex items-center justify-center rounded-full bg-slate-100">
+<span class="material-symbols-outlined text-slate-500 !text-lg">search</span>
+</button>
+</div>
+<div class="grid grid-cols-1 gap-6">
+<div class="soft-card p-6 flex flex-col gap-4 relative overflow-hidden group active:scale-[0.98]">
+<div class="flex justify-between items-start">
+<div class="size-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+</div>
+<div class="flex items-center gap-2 bg-emerald-50 px-3 py-1 rounded-full">
+<span class="status-dot bg-emerald-500 text-emerald-500 !size-1.5"></span>
+<span class="text-[10px] font-bold text-emerald-600 uppercase">Online</span>
+</div>
+</div>
+<div>
+<h4 class="font-bold text-slate-800 text-lg">Main Entrance</h4>
+<p class="text-sm text-slate-400 flex items-center gap-2">
+<span class="font-mono">ID: MP-7721</span>
+<span class="size-1 rounded-full bg-slate-200"></span>
+<span>v2.4.0</span>
+</p>
+</div>
+<div class="absolute right-4 bottom-6 opacity-20 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-slate-400">arrow_forward_ios</span>
+</div>
+</div>
+<div class="soft-card p-6 flex flex-col gap-4 relative overflow-hidden group active:scale-[0.98]">
+<div class="flex justify-between items-start">
+<div class="size-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+</div>
+<div class="flex items-center gap-2 bg-emerald-50 px-3 py-1 rounded-full">
+<span class="status-dot bg-emerald-500 text-emerald-500 !size-1.5"></span>
+<span class="text-[10px] font-bold text-emerald-600 uppercase">Online</span>
+</div>
+</div>
+<div>
+<h4 class="font-bold text-slate-800 text-lg">Retail Aisle 04</h4>
+<p class="text-sm text-slate-400 flex items-center gap-2">
+<span class="font-mono">ID: MP-8812</span>
+<span class="size-1 rounded-full bg-slate-200"></span>
+<span>v2.4.0</span>
+</p>
+</div>
+<div class="absolute right-4 bottom-6 opacity-20 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-slate-400">arrow_forward_ios</span>
+</div>
+</div>
+<div class="soft-card p-6 flex flex-col gap-4 relative overflow-hidden group active:scale-[0.98] grayscale opacity-80">
+<div class="flex justify-between items-start">
+<div class="size-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">
+<span class="material-symbols-outlined">qr_code_scanner</span>
+</div>
+<div class="flex items-center gap-2 bg-rose-50 px-3 py-1 rounded-full">
+<span class="status-dot bg-rose-500 text-rose-500 !size-1.5"></span>
+<span class="text-[10px] font-bold text-rose-600 uppercase tracking-tighter">Disconnected</span>
+</div>
+</div>
+<div>
+<h4 class="font-bold text-slate-800 text-lg">Outdoor Kiosk</h4>
+<p class="text-sm text-rose-500 font-medium mt-1">
+                    Off for 2h 14m
+                </p>
+</div>
+<div class="absolute right-4 bottom-6 opacity-20 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-slate-400">arrow_forward_ios</span>
+</div>
+</div>
+</div>
+<div class="mt-12 text-center">
+<button class="w-full bg-slate-900 text-white py-5 px-8 rounded-4xl flex items-center justify-center gap-3 shadow-xl shadow-slate-200 active:scale-95 transition-transform">
+<span class="material-symbols-outlined !font-light">add</span>
+<span class="font-bold text-sm uppercase tracking-widest">Register Device</span>
+</button>
+<p class="mt-6 text-slate-400 text-xs font-medium">
+            Managed via <span class="text-slate-900">MercadoPago Cloud</span>
+</p>
+</div>
+</main>
+<nav class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-50">
+<div class="bg-white/80 backdrop-blur-2xl rounded-4xl shadow-soft border border-white/60 p-2 flex justify-between items-center">
+<a class="flex flex-col items-center justify-center size-12 rounded-3xl bg-slate-900 text-white" href="#">
+<span class="material-symbols-outlined !text-[20px]">grid_view</span>
+</a>
+<a class="flex flex-col items-center justify-center size-12 rounded-3xl text-slate-400" href="#">
+<span class="material-symbols-outlined !text-[20px]">receipt_long</span>
+</a>
+<a class="flex flex-col items-center justify-center size-12 rounded-3xl text-slate-400" href="#">
+<span class="material-symbols-outlined !text-[20px]">insert_chart</span>
+</a>
+<a class="flex flex-col items-center justify-center size-12 rounded-3xl text-slate-400" href="#">
+<span class="material-symbols-outlined !text-[20px]">settings</span>
+</a>
+</div>
+</nav>
+
+</body></html>

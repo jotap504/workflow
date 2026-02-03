@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Modern QR Payment Device</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "soft-white": "#fcfcfd",
+                        "soft-grey": "#f4f4f7",
+                        "mp-blue": "#009ee3",
+                        "accent-blue": "#f0f7ff",
+                    },
+                    fontFamily: {
+                        "sans": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "3xl": "1.5rem",
+                        "4xl": "2rem",
+                    },
+                    boxShadow: {
+                        "soft": "0 10px 40px -10px rgba(0,0,0,0.03)",
+                        "premium": "0 20px 50px -12px rgba(0,0,0,0.05)",
+                    }
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        body {
+            @apply bg-soft-white text-slate-800 antialiased;
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
+        }
+        .thin-border {
+            border: 1px solid rgba(0,0,0,0.04);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="overflow-x-hidden">
+<header class="sticky top-0 z-50 w-full bg-soft-white/70 backdrop-blur-xl">
+<div class="flex items-center justify-between px-6 py-5 max-w-7xl mx-auto">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-mp-blue/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-mp-blue text-xl">qr_code_2</span>
+</div>
+<span class="text-lg font-light tracking-tight text-slate-900">QR<span class="font-medium text-mp-blue">Pay</span></span>
+</div>
+<button class="bg-slate-900 text-white px-5 py-2.5 rounded-full text-xs font-medium tracking-wide shadow-soft hover:bg-slate-800 transition-all">
+                Client Login
+            </button>
+</div>
+</header>
+<main class="flex flex-col">
+<section class="px-6 pt-12 pb-16">
+<div class="max-w-7xl mx-auto flex flex-col items-center text-center">
+<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-mp-blue/5 text-mp-blue mb-8">
+<span class="text-[10px] font-semibold uppercase tracking-[0.2em]">Next Generation Payment</span>
+</div>
+<h1 class="text-4xl md:text-5xl font-extralight text-slate-900 leading-[1.2] tracking-tight mb-6">
+                    Redefining <br/>
+<span class="font-medium">QR Transactions</span>
+</h1>
+<p class="text-slate-500 text-base font-light leading-relaxed max-w-xs mb-10">
+                    Elegant hardware designed for seamless integration and effortless payments.
+                </p>
+<div class="relative w-full max-w-sm mb-12">
+<div class="absolute inset-0 bg-mp-blue/10 blur-[80px] rounded-full -z-10 opacity-30"></div>
+<div class="bg-white p-2 rounded-[2.5rem] shadow-premium thin-border">
+<div class="aspect-[4/5] rounded-[2rem] bg-soft-grey bg-cover bg-center overflow-hidden" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBGvalzV8Bue8aYI0y2Uf_Uuwk5r8v8CXXPR4CkrbUh57OzKhpPK4OYccCz783QIDZEk72B6A1vfKU0qxI2ES30mNu617ucejiXhDBXQ2zSI7FDuG15vZd6ILhNMlfCklNbUJ6C8xgWwwHXmITGm5mHZ1JkXUmFmZ1ss1J_ZB7wNfKudLCWdcphnKmF1oqxGeKjNuoku07zie3efxzXss7DehGv-LIl9a4PScX9dZ7vn_bUwKk8Gz52lLmzn1UcbnMuHuIsa1Rypzw');">
+</div>
+</div>
+</div>
+<div class="flex flex-col w-full gap-4 max-w-xs">
+<button class="bg-mp-blue text-white h-14 rounded-2xl font-medium shadow-soft hover:bg-opacity-90 transition-all">
+                        Get Your Device
+                    </button>
+<button class="bg-transparent text-slate-600 h-14 rounded-2xl font-light hover:bg-soft-grey transition-all">
+                        Explore Features
+                    </button>
+</div>
+</div>
+</section>
+<section class="bg-soft-grey/40 py-20 px-6">
+<div class="max-w-7xl mx-auto">
+<div class="mb-12">
+<h2 class="text-2xl font-light text-slate-900 tracking-tight">Ecosystem Integration</h2>
+<p class="text-sm text-slate-400 font-light mt-1">Built for the modern financial landscape.</p>
+</div>
+<div class="grid grid-cols-1 gap-6">
+<div class="bg-white p-8 rounded-3xl shadow-soft thin-border">
+<span class="material-symbols-outlined text-mp-blue text-3xl mb-6">bolt</span>
+<h3 class="text-lg font-medium text-slate-900 mb-2">Instant Settlement</h3>
+<p class="text-slate-500 text-sm font-light leading-relaxed">
+                            Access your funds immediately. Seamless flow from customer scan to your account.
+                        </p>
+</div>
+<div class="bg-white p-8 rounded-3xl shadow-soft thin-border">
+<span class="material-symbols-outlined text-mp-blue text-3xl mb-6">security</span>
+<h3 class="text-lg font-medium text-slate-900 mb-2">Bank-Grade Security</h3>
+<p class="text-slate-500 text-sm font-light leading-relaxed">
+                            Encrypted processing with advanced anti-fraud protection powered by industry leaders.
+                        </p>
+</div>
+<div class="bg-white p-8 rounded-3xl shadow-soft thin-border">
+<span class="material-symbols-outlined text-mp-blue text-3xl mb-6">query_stats</span>
+<h3 class="text-lg font-medium text-slate-900 mb-2">Real-time Analytics</h3>
+<p class="text-slate-500 text-sm font-light leading-relaxed">
+                            Track your sales performance with our minimalist management dashboard.
+                        </p>
+</div>
+</div>
+</div>
+</section>
+<section class="py-20 px-6">
+<div class="max-w-7xl mx-auto">
+<h2 class="text-2xl font-light text-slate-900 tracking-tight mb-10">Advanced Engineering</h2>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-soft-grey/50 p-6 rounded-2xl thin-border">
+<span class="material-symbols-outlined text-slate-400 text-xl mb-3">wifi</span>
+<h4 class="text-xs font-medium uppercase tracking-wider text-slate-900">Connectivity</h4>
+<p class="text-[10px] text-slate-400 mt-1">Wi-Fi + 4G LTE</p>
+</div>
+<div class="bg-soft-grey/50 p-6 rounded-2xl thin-border">
+<span class="material-symbols-outlined text-slate-400 text-xl mb-3">battery_very_low</span>
+<h4 class="text-xs font-medium uppercase tracking-wider text-slate-900">Endurance</h4>
+<p class="text-[10px] text-slate-400 mt-1">15h Operations</p>
+</div>
+<div class="bg-soft-grey/50 p-6 rounded-2xl thin-border">
+<span class="material-symbols-outlined text-slate-400 text-xl mb-3">wb_sunny</span>
+<h4 class="text-xs font-medium uppercase tracking-wider text-slate-900">Display</h4>
+<p class="text-[10px] text-slate-400 mt-1">OLED High-Res</p>
+</div>
+<div class="bg-soft-grey/50 p-6 rounded-2xl thin-border">
+<span class="material-symbols-outlined text-slate-400 text-xl mb-3">system_update</span>
+<h4 class="text-xs font-medium uppercase tracking-wider text-slate-900">Updates</h4>
+<p class="text-[10px] text-slate-400 mt-1">OTA Intelligent</p>
+</div>
+</div>
+</div>
+</section>
+<section class="bg-mp-blue/5 py-20 px-6">
+<div class="max-w-7xl mx-auto">
+<div class="mb-12 text-center">
+<h2 class="text-3xl font-extralight text-slate-900 tracking-tight">Full Control. Anywhere.</h2>
+<p class="text-slate-400 font-light mt-3">Manage your devices through a clean, intuitive interface.</p>
+</div>
+<div class="bg-white rounded-3xl shadow-premium thin-border overflow-hidden">
+<div class="bg-soft-grey/30 px-6 py-4 flex items-center justify-between border-b border-black/5">
+<div class="flex gap-1.5">
+<div class="w-2.5 h-2.5 rounded-full bg-slate-200"></div>
+<div class="w-2.5 h-2.5 rounded-full bg-slate-200"></div>
+</div>
+<span class="text-[10px] text-slate-400 font-medium tracking-tighter">TERMINAL OS v2.0</span>
+</div>
+<div class="p-8">
+<div class="space-y-6">
+<div class="flex justify-between items-end">
+<div>
+<p class="text-[10px] uppercase tracking-widest text-slate-400 font-medium mb-1">Daily Volume</p>
+<h4 class="text-3xl font-extralight text-slate-900">$12,450.00</h4>
+</div>
+<div class="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-medium">
+                                    +14.2%
+                                </div>
+</div>
+<div class="h-32 w-full bg-soft-grey/50 rounded-2xl relative flex items-center justify-center overflow-hidden">
+<div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-mp-blue/5 to-transparent"></div>
+<span class="text-[10px] text-slate-300 uppercase tracking-widest font-medium">Activity Stream</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="py-24 px-6 text-center">
+<div class="max-w-xl mx-auto">
+<h2 class="text-3xl font-extralight text-slate-900 mb-6">Begin Your Integration.</h2>
+<p class="text-slate-500 font-light mb-10">Join forward-thinking businesses upgrading their payment experience.</p>
+<div class="flex flex-col gap-4">
+<input class="h-14 bg-soft-grey border-none rounded-2xl px-6 text-sm placeholder:text-slate-400 focus:ring-1 focus:ring-mp-blue/20 transition-all" placeholder="Your work email" type="email"/>
+<button class="h-14 bg-slate-900 text-white rounded-2xl font-medium shadow-soft">Request Consultation</button>
+</div>
+</div>
+</section>
+</main>
+<footer class="bg-soft-grey/30 pt-16 pb-12 px-6 border-t border-black/[0.02]">
+<div class="max-w-7xl mx-auto">
+<div class="grid grid-cols-2 gap-10 mb-16">
+<div>
+<h5 class="text-[11px] font-semibold text-slate-900 uppercase tracking-widest mb-6">Product</h5>
+<ul class="space-y-4 text-xs font-light text-slate-500">
+<li>Terminal</li>
+<li>Management</li>
+<li>API Documentation</li>
+</ul>
+</div>
+<div>
+<h5 class="text-[11px] font-semibold text-slate-900 uppercase tracking-widest mb-6">Legal</h5>
+<ul class="space-y-4 text-xs font-light text-slate-500">
+<li>Privacy</li>
+<li>Terms</li>
+<li>Security</li>
+</ul>
+</div>
+</div>
+<div class="flex flex-col gap-6">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-slate-900/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-400 text-base">qr_code_2</span>
+</div>
+<span class="text-sm font-light text-slate-900">QR<span class="font-medium">Pay</span></span>
+</div>
+<p class="text-[10px] text-slate-400 font-light tracking-wide">
+                    © 2024 Design. All rights reserved. Built for professional payment environments.
+                </p>
+</div>
+</div>
+</footer>
+
+</body></html>

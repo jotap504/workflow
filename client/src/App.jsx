@@ -21,6 +21,10 @@ import ShopAdminView from './components/ShopAdminView'
 import PublicStorefront from './components/PublicStorefront'
 import NotificationBell from './components/NotificationBell';
 
+import QRPayLanding from './pages/QRPayLanding'
+import TerminalDashboard from './pages/TerminalDashboard'
+import TerminalConfig from './pages/TerminalConfig'
+
 import { LayoutDashboard, Calendar, Vote, BarChart, Users, LogOut, Moon, Sun, User, Layers, Menu, X, LayoutGrid, ShoppingCart } from 'lucide-react';
 
 const Dashboard = () => {
@@ -47,21 +51,21 @@ const Dashboard = () => {
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', padding: '5px', display: 'flex' }}
           >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
 
-          <h2 style={{ fontSize: '1.2rem', fontWeight: '800', letterSpacing: '0.5px', margin: 0, background: 'linear-gradient(90deg, #6366f1, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Bprocess</h2>
+          <h2 style={{ fontSize: '0.95rem', fontWeight: '800', letterSpacing: '0.5px', margin: 0, background: 'linear-gradient(90deg, #6366f1, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Bprocess</h2>
 
           <nav className="desktop-nav" style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', marginLeft: '1rem' }}>
-            <NavIcon to="/hub" icon={<LayoutGrid size={18} />} label="Menu Principal" navigate={navigate} />
-            <NavIcon to="/workflow" icon={<LayoutDashboard size={18} />} label="Tablero" navigate={navigate} />
-            <NavIcon to="/workflow/calendar" icon={<Calendar size={18} />} label="Calendario" navigate={navigate} />
-            <NavIcon to="/workflow/polls" icon={<Vote size={18} />} label="Votaciones" navigate={navigate} />
-            <NavIcon to="/workflow/reports" icon={<BarChart size={18} />} label="Reportes" navigate={navigate} />
-            <NavIcon to="/workflow/profile" icon={<User size={18} />} label="Perfil" navigate={navigate} />
-            {(user?.role === 'admin' || user?.role === 'manager') && <NavIcon to="/workflow/categories" icon={<Layers size={18} />} label="Categorías" navigate={navigate} />}
-            {(user?.role === 'admin' || user?.role === 'manager') && <NavIcon to="/workflow/users" icon={<Users size={18} />} label="Usuarios" navigate={navigate} />}
-            {(user?.role === 'admin' || user?.role === 'manager') && <NavIcon to="/shop" icon={<ShoppingCart size={18} />} label="Tienda" navigate={navigate} />}
+            <NavIcon to="/hub" icon={<LayoutGrid size={16} />} label="Menu Principal" navigate={navigate} />
+            <NavIcon to="/workflow" icon={<LayoutDashboard size={16} />} label="Tablero" navigate={navigate} />
+            <NavIcon to="/workflow/calendar" icon={<Calendar size={16} />} label="Calendario" navigate={navigate} />
+            <NavIcon to="/workflow/polls" icon={<Vote size={16} />} label="Votaciones" navigate={navigate} />
+            <NavIcon to="/workflow/reports" icon={<BarChart size={16} />} label="Reportes" navigate={navigate} />
+            <NavIcon to="/workflow/profile" icon={<User size={16} />} label="Perfil" navigate={navigate} />
+            {(user?.role === 'admin' || user?.role === 'manager') && <NavIcon to="/workflow/categories" icon={<Layers size={16} />} label="Categorías" navigate={navigate} />}
+            {(user?.role === 'admin' || user?.role === 'manager') && <NavIcon to="/workflow/users" icon={<Users size={16} />} label="Usuarios" navigate={navigate} />}
+            {(user?.role === 'admin' || user?.role === 'manager') && <NavIcon to="/shop" icon={<ShoppingCart size={16} />} label="Tienda" navigate={navigate} />}
           </nav>
         </div>
 
@@ -112,8 +116,8 @@ const Dashboard = () => {
                 background: 'rgba(255,255,255,0.05)',
                 border: '1px solid var(--card-border)',
                 borderRadius: '20px',
-                padding: '6px 12px 6px 30px',
-                fontSize: '0.8rem',
+                padding: '4px 10px 4px 28px',
+                fontSize: '0.7rem',
                 color: 'inherit',
                 outline: 'none',
                 width: '120px',
@@ -126,9 +130,9 @@ const Dashboard = () => {
           </div>
 
           <NotificationBell />
-          <div className="desktop-user" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.1' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: '500' }}>{user?.username}</span>
-            <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>{user?.role}</span>
+          <div className="desktop-user" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: '500' }}>{user?.username}</span>
+            <span style={{ fontSize: '0.65rem', opacity: 0.6 }}>{user?.role}</span>
           </div>
           <button className="desktop-nav" onClick={logout} style={{
             background: 'rgba(239, 68, 68, 0.1)',
@@ -173,8 +177,8 @@ const NavIcon = ({ to, icon, label, navigate }) => {
         background: isActive ? 'var(--primary-color)' : 'transparent',
         color: isActive ? 'white' : 'inherit',
         border: 'none',
-        padding: '8px',
-        borderRadius: '12px',
+        padding: '6px',
+        borderRadius: '8px',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
@@ -269,8 +273,18 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/" element={<PublicStorefront />} />
+            <Route path="/" element={<QRPayLanding />} />
             <Route path="/store" element={<PublicStorefront />} />
+            <Route path="/terminals" element={
+              <PrivateRoute>
+                <TerminalDashboard />
+              </PrivateRoute>
+            } />
+            <Route path="/terminals/:id/config" element={
+              <PrivateRoute>
+                <TerminalConfig />
+              </PrivateRoute>
+            } />
             <Route path="/hub" element={
               <PrivateRoute>
                 <HubView />
