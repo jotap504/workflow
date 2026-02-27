@@ -45,19 +45,21 @@ const AIAssistantWidget = () => {
                 })
             });
 
-            if (!response.ok) throw new Error('Error en la comunicación con la IA');
-
             const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Error en la comunicación con la IA');
+            }
 
             if (data.message && data.message.content) {
                 setMessages(prev => [...prev, { role: 'assistant', content: data.message.content }]);
             } else if (data.error) {
-                setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${data.error}`, isError: true }]);
+                throw new Error(data.error);
             }
 
         } catch (error) {
             console.error('Error sending message:', error);
-            setMessages(prev => [...prev, { role: 'assistant', content: 'Lo siento, hubo un problema al procesar tu solicitud.', isError: true }]);
+            setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${error.message}`, isError: true }]);
         } finally {
             setIsLoading(false);
         }
