@@ -33,6 +33,7 @@ app.use('/api/clients', require('./routes/clients'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/shop', shopRoutes);     // Handles /settings, /checkout, etc.
 app.use('/api/shop', productRoutes);  // Handles / and /:id
+app.use('/api/ai', require('./routes/ai'));
 
 // Static Uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

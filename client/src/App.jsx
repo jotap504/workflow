@@ -20,6 +20,7 @@ import ClientsView from './components/ClientsView'
 import ShopAdminView from './components/ShopAdminView'
 import PublicStorefront from './components/PublicStorefront'
 import NotificationBell from './components/NotificationBell';
+import AIAssistantWidget from './components/AIAssistantWidget';
 
 import QRPayLanding from './pages/QRPayLanding'
 import TerminalDashboard from './pages/TerminalDashboard'
@@ -262,6 +263,9 @@ function App() {
       <CartProvider>
         <Router>
           <Toaster position="top-right" richColors toastOptions={{ style: { zIndex: 2000 } }} />
+
+          {/* Global AI Assistant */}
+          <AIAssistantWidget />
 
           {/* Global Theme Toggle (Absolute or fixed position, or in header of pages) */}
           <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
