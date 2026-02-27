@@ -22,9 +22,6 @@ import PublicStorefront from './components/PublicStorefront'
 import NotificationBell from './components/NotificationBell';
 import AIAssistantWidget from './components/AIAssistantWidget';
 
-import QRPayLanding from './pages/QRPayLanding'
-import TerminalDashboard from './pages/TerminalDashboard'
-import TerminalConfig from './pages/TerminalConfig'
 
 import { LayoutDashboard, Calendar, Vote, BarChart, Users, LogOut, Moon, Sun, User, Layers, Menu, X, LayoutGrid, ShoppingCart } from 'lucide-react';
 
@@ -277,18 +274,7 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/" element={<QRPayLanding />} />
-            <Route path="/store" element={<PublicStorefront />} />
-            <Route path="/terminals" element={
-              <PrivateRoute>
-                <TerminalDashboard />
-              </PrivateRoute>
-            } />
-            <Route path="/terminals/:id/config" element={
-              <PrivateRoute>
-                <TerminalConfig />
-              </PrivateRoute>
-            } />
+
             <Route path="/hub" element={
               <PrivateRoute>
                 <HubView />
