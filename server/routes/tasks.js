@@ -133,15 +133,19 @@ router.post('/', upload.single('attachment'), async (req, res) => {
 
             const isParent = recurrence && recurrence !== 'none' ? 1 : 0;
             const taskData = {
-                title, description, urgency: urgency || 'medium',
-                category_id, due_date, attachment_url,
-                created_by: req.userId, recurrence: recurrence || 'none',
+                title,
+                description: description || "",
+                urgency: urgency || 'medium',
+                created_by: req.userId,
+                recurrence: recurrence || 'none',
                 is_recurring_parent: isParent,
                 status: 'pending',
-                client_id: (client_id && client_id !== "") ? client_id : null,
-                category_id: (category_id && category_id !== "") ? category_id : null,
                 created_at: new Date().toISOString()
             };
+            if (category_id && category_id !== "") taskData.category_id = category_id;
+            if (client_id && client_id !== "") taskData.client_id = client_id;
+            if (attachment_url) taskData.attachment_url = attachment_url;
+            if (due_date) taskData.due_date = due_date;
 
             const docRef = await db.collection('tasks').add(taskData);
             const parentId = docRef.id;
