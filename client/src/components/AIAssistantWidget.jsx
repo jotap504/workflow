@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
 
 const AIAssistantWidget = () => {
-    const { token } = useAuth();
     const location = useLocation();
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([
@@ -25,6 +24,7 @@ const AIAssistantWidget = () => {
     }, [messages, isOpen]);
 
     const handleSend = async () => {
+        const token = localStorage.getItem('token');
         if (!input.trim() || !token) return;
 
         const userMessage = { role: 'user', content: input.trim() };
@@ -33,7 +33,7 @@ const AIAssistantWidget = () => {
         setIsLoading(true);
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/ai/chat`, {
+            const response = await fetch('/api/ai/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
