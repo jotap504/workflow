@@ -33,9 +33,34 @@ const tools = [{
                 properties: {
                     title: { type: "STRING", description: "The title of the task" },
                     description: { type: "STRING", description: "A detailed description of the task" },
-                    urgency: { type: "STRING", description: "The urgency of the task (low, medium, high)" }
+                    urgency: { type: "STRING", description: "The urgency of the task (low, medium, high)" },
+                    due_date: { type: "STRING", description: "The due date for the task in ISO 8601 format (e.g. 2026-02-28T00:00:00Z). Calculate the date based on the user's request, considering today as the current date timezone-independent." }
                 },
                 required: ["title", "urgency"]
+            }
+        },
+        {
+            name: "updateTask",
+            description: "Update the status or other details of an existing task.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    taskId: { type: "STRING", description: "The ID of the task to update" },
+                    status: { type: "STRING", description: "New status: pending, in-progress, or done." },
+                    due_date: { type: "STRING", description: "New due date in ISO 8601 format." }
+                },
+                required: ["taskId"]
+            }
+        },
+        {
+            name: "getTaskNotes",
+            description: "Retrieve notes/chats for a specific task.",
+            parameters: {
+                type: "OBJECT",
+                properties: {
+                    taskId: { type: "STRING", description: "The ID of the task to get notes for" }
+                },
+                required: ["taskId"]
             }
         },
         {
@@ -91,14 +116,15 @@ async function executeTool(toolName, args, req) {
                     created_at: new Date().toISOString(),
                     recurrence: "none"
                 };
+                if (args.due_date) newTask.due_date = args.due_date;
                 const docRef = await db.collection('tasks').add(newTask);
                 req.app.get('io').emit('tasks_updated');
                 return { success: true, taskId: docRef.id, message: "Task created successfully." };
             } else {
                 return new Promise((resolve) => {
                     db.run(
-                        "INSERT INTO tasks (title, description, urgency, status, created_by, recurrence) VALUES (?, ?, ?, 'pending', ?, 'none')",
-                        [args.title, args.description || "", args.urgency || "medium", req.userId],
+                        "INSERT INTO tasks (title, description, urgency, status, created_by, recurrence, due_date) VALUES (?, ?, ?, 'pending', ?, 'none', ?)",
+                        [args.title, args.description || "", args.urgency || "medium", req.userId, args.due_date || null],
                         function (err) {
                             if (err) resolve({ error: err.message });
                             else {
@@ -107,6 +133,49 @@ async function executeTool(toolName, args, req) {
                             }
                         }
                     );
+                });
+            }
+
+        case 'updateTask':
+            if (db.isFirebase) {
+                try {
+                    const taskRef = db.collection('tasks').doc(String(args.taskId));
+                    const updates = {};
+                    if (args.status) updates.status = args.status;
+                    if (args.due_date) updates.due_date = args.due_date;
+
+                    if (Object.keys(updates).length > 0) {
+                        await taskRef.update(updates);
+                        req.app.get('io').emit('tasks_updated');
+                    }
+                    return { success: true, message: "Task updated successfully." };
+                } catch (e) { return { error: e.message }; }
+            } else {
+                return new Promise((resolve) => {
+                    db.run("UPDATE tasks SET status = COALESCE(?, status), due_date = COALESCE(?, due_date) WHERE id = ?",
+                        [args.status || null, args.due_date || null, args.taskId], function (err) {
+                            if (err) resolve({ error: err.message });
+                            else {
+                                req.app.get('io').emit('tasks_updated');
+                                resolve({ success: true, message: "Task updated successfully." });
+                            }
+                        });
+                });
+            }
+
+        case 'getTaskNotes':
+            if (db.isFirebase) {
+                try {
+                    const snap = await db.collection('task_notes').where('task_id', '==', args.taskId).get();
+                    const notes = snap.docs.map(doc => doc.data().content);
+                    return { notes: notes.length > 0 ? notes : [] };
+                } catch (e) { return { error: e.message }; }
+            } else {
+                return new Promise((resolve) => {
+                    db.all("SELECT content, created_at FROM task_notes WHERE task_id = ?", [args.taskId], (err, rows) => {
+                        if (err) resolve({ error: err.message });
+                        else resolve({ notes: rows });
+                    });
                 });
             }
 
@@ -157,7 +226,7 @@ router.post('/chat', async (req, res) => {
     const systemPrompt = `Eres un asistente de inteligencia artificial integrado en una aplicación de gestión empresarial llamada "Workflow". 
 Tu propósito es ayudar al usuario (${req.userRole}) a gestionar sus datos, cargar tareas y consultar información rápida.
 El usuario actualmente se encuentra en la sección: ${context || 'General'}.
-Puedes acceder a la base de datos usando las herramientas proporcionadas. Usa llamadas a funciones para responder consultas sobre estado financiero, tareas pendientes o listar clientes. Si el usuario te pide crear una tarea, usa la herramienta createTask. Sé conciso y profesional. Responde en español.`;
+Puedes acceder a la base de datos usando las herramientas proporcionadas. Usa llamadas a funciones para responder consultas sobre estado financiero, tareas pendientes o listar clientes. Si el usuario te pide crear una tarea, usa la herramienta createTask (puedes inferir las fechas para el campo due_date en formato ISO 8601; Ej: Si hoy es 2026-02-27 y pide 'mañana', usa 2026-02-28). Para modificar tareas (ej: cambiar el estado a 'en-progreso'), usa updateTask. Para leer los chats de una tarea, usa getTaskNotes. Sé conciso y profesional. Responde en español y dale siempre la bienvenida al usuario con algo de empatía.`;
 
     try {
         console.log('[AI] Starting chat completion with Gemini...');

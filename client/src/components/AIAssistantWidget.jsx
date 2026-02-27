@@ -7,7 +7,7 @@ const AIAssistantWidget = () => {
     const location = useLocation();
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([
-        { role: 'assistant', content: '¡Hola! Soy tu asistente de IA. Puedo ayudarte a consultar tareas, revisar la contabilidad, o listar clientes. ¿En qué te ayudo hoy?' }
+        { role: 'assistant', content: '¡Hola! Soy tu asistente de IA. Puedo ayudarte a consultar, crear y modificar tareas, leer sus chats, revisar la contabilidad o listar clientes. ¿En qué te ayudo hoy?' }
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
