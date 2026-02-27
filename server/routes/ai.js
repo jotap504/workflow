@@ -204,7 +204,12 @@ Puedes acceder a la base de datos usando las herramientas proporcionadas. Usa fu
 
             for (const toolCall of responseMessage.tool_calls) {
                 const functionName = toolCall.function.name;
-                const functionArgs = JSON.parse(toolCall.function.arguments);
+                let functionArgs = {};
+                try {
+                    functionArgs = JSON.parse(toolCall.function.arguments);
+                } catch (e) {
+                    console.log("[AI] Bad args:", toolCall.function.arguments);
+                }
                 const functionResponse = await executeTool(functionName, functionArgs, req);
 
                 fullMessages.push({
@@ -221,10 +226,10 @@ Puedes acceder a la base de datos usando las herramientas proporcionadas. Usa fu
                 messages: fullMessages,
             });
 
-            return res.json({ message: secondResponse.choices[0].message });
+            return res.json({ message: { role: 'assistant', content: secondResponse.choices[0].message.content || '...' } });
         }
 
-        res.json({ message: responseMessage });
+        res.json({ message: { role: 'assistant', content: responseMessage.content || 'No response.' } });
 
     } catch (error) {
         console.error('[AI ERROR]', error);
