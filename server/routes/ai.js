@@ -1,78 +1,63 @@
 const express = require('express');
 const router = express.Router();
-const { OpenAI } = require('openai');
+const { GoogleGenAI } = require('@google/genai');
 const db = require('../db');
 const verifyToken = require('../middleware/auth');
 
-// Initialize OpenAI conditionally
-let openai = null;
-if (process.env.OPENAI_API_KEY) {
-    openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY
-    });
+// Initialize Gemini conditionally
+let ai = null;
+if (process.env.GEMINI_API_KEY) {
+    ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 }
 
 router.use(verifyToken);
 
-// Tools definition
-const tools = [
-    {
-        type: "function",
-        function: {
+// Tools definition for Gemini
+const tools = [{
+    functionDeclarations: [
+        {
             name: "getPendingTasks",
             description: "Retrieve all pending tasks from the database. Optionally specify a category or urgency.",
             parameters: {
-                type: "object",
+                type: "OBJECT",
                 properties: {
-                    limit: { type: "integer", description: "Limit number of tasks returned" }
+                    limit: { type: "INTEGER", description: "Limit number of tasks returned" }
                 },
-                required: []
             }
-        }
-    },
-    {
-        type: "function",
-        function: {
+        },
+        {
             name: "createTask",
             description: "Create a new task in the system.",
             parameters: {
-                type: "object",
+                type: "OBJECT",
                 properties: {
-                    title: { type: "string", description: "The title of the task" },
-                    description: { type: "string", description: "A detailed description of the task" },
-                    urgency: { type: "string", enum: ["low", "medium", "high"], description: "The urgency of the task" }
+                    title: { type: "STRING", description: "The title of the task" },
+                    description: { type: "STRING", description: "A detailed description of the task" },
+                    urgency: { type: "STRING", description: "The urgency of the task (low, medium, high)" }
                 },
                 required: ["title", "urgency"]
             }
-        }
-    },
-    {
-        type: "function",
-        function: {
+        },
+        {
             name: "getAccountingSummary",
             description: "Retrieve the current accounting balances (accounts and entities balances).",
             parameters: {
-                type: "object",
+                type: "OBJECT",
                 properties: {},
-                required: []
             }
-        }
-    },
-    {
-        type: "function",
-        function: {
+        },
+        {
             name: "getClientsList",
             description: "Retrieve a list of clients from the database.",
             parameters: {
-                type: "object",
+                type: "OBJECT",
                 properties: {
-                    limit: { type: "integer", description: "Optional limit for number of clients to fetch" }
+                    limit: { type: "INTEGER", description: "Optional limit for number of clients to fetch" }
                 },
-                required: []
             }
         }
-    }
-];
+    ]
+}];
 
 // Tool Implementation Map
 async function executeTool(toolName, args, req) {
@@ -85,12 +70,12 @@ async function executeTool(toolName, args, req) {
                 // Limit for context size
                 if (args.limit) tasks = tasks.slice(0, args.limit);
                 else tasks = tasks.slice(0, 10);
-                return JSON.stringify(tasks.map(t => ({ title: t.title, urgency: t.urgency, id: t.id })));
+                return { tasks: tasks.map(t => ({ title: t.title, urgency: t.urgency, id: t.id })) };
             } else {
                 return new Promise((resolve) => {
                     db.all("SELECT id, title, urgency, due_date FROM tasks WHERE status = 'pending' LIMIT ?", [args.limit || 10], (err, rows) => {
-                        if (err) resolve(JSON.stringify({ error: err.message }));
-                        else resolve(JSON.stringify(rows));
+                        if (err) resolve({ error: err.message });
+                        else resolve({ tasks: rows });
                     });
                 });
             }
@@ -108,17 +93,17 @@ async function executeTool(toolName, args, req) {
                 };
                 const docRef = await db.collection('tasks').add(newTask);
                 req.app.get('io').emit('tasks_updated');
-                return JSON.stringify({ success: true, taskId: docRef.id, message: "Task created successfully." });
+                return { success: true, taskId: docRef.id, message: "Task created successfully." };
             } else {
                 return new Promise((resolve) => {
                     db.run(
                         "INSERT INTO tasks (title, description, urgency, status, created_by, recurrence) VALUES (?, ?, ?, 'pending', ?, 'none')",
                         [args.title, args.description || "", args.urgency || "medium", req.userId],
                         function (err) {
-                            if (err) resolve(JSON.stringify({ error: err.message }));
+                            if (err) resolve({ error: err.message });
                             else {
                                 req.app.get('io').emit('tasks_updated');
-                                resolve(JSON.stringify({ success: true, taskId: this.lastID, message: "Task created successfully." }));
+                                resolve({ success: true, taskId: this.lastID, message: "Task created successfully." });
                             }
                         }
                     );
@@ -137,99 +122,94 @@ async function executeTool(toolName, args, req) {
                             balances[item.accountId].credit += parseFloat(item.credit) || 0;
                         });
                     });
-                    return JSON.stringify(balances); // Might need formatting for LLM
-                } catch (e) { return JSON.stringify({ error: e.message }); }
+                    return { balances };
+                } catch (e) { return { error: e.message }; }
             } else {
-                return JSON.stringify({ message: "Accounting not implemented in SQLite yet." });
+                return { message: "Accounting not implemented in SQLite yet." };
             }
 
         case 'getClientsList':
             if (db.isFirebase) {
                 const snap = await db.collection('hub_clients').limit(args.limit || 10).get();
                 const clients = snap.docs.map(doc => ({ name: doc.data().name, email: doc.data().email }));
-                return JSON.stringify(clients);
+                return { clients };
             } else {
                 return new Promise((resolve) => {
                     db.all("SELECT name, email FROM hub_clients LIMIT ?", [args.limit || 10], (err, rows) => {
-                        if (err) resolve(JSON.stringify({ error: err.message }));
-                        else resolve(JSON.stringify(rows));
+                        if (err) resolve({ error: err.message });
+                        else resolve({ clients: rows });
                     });
                 });
             }
 
         default:
-            return JSON.stringify({ error: "Unknown tool" });
+            return { error: "Unknown tool" };
     }
 }
 
 router.post('/chat', async (req, res) => {
-    if (!openai) {
-        return res.status(500).json({ error: 'OpenAI API key no configurada. Por favor, añádela al archivo .env.' });
+    if (!ai) {
+        return res.status(500).json({ error: 'LLM no configurada. Por favor, asegúrate de que exista una clave GEMINI_API_KEY.' });
     }
 
     const { messages, context } = req.body;
-    // context from frontend (e.g., current page, selected item)
 
     const systemPrompt = `Eres un asistente de inteligencia artificial integrado en una aplicación de gestión empresarial llamada "Workflow". 
 Tu propósito es ayudar al usuario (${req.userRole}) a gestionar sus datos, cargar tareas y consultar información rápida.
 El usuario actualmente se encuentra en la sección: ${context || 'General'}.
-Puedes acceder a la base de datos usando las herramientas proporcionadas. Usa funciones para responder consultas sobre estado financiero, tareas pendientes o listar clientes. Si el usuario te pide crear una tarea, usa la herramienta createTask. Sé conciso y profesional. Responde en español.`;
+Puedes acceder a la base de datos usando las herramientas proporcionadas. Usa llamadas a funciones para responder consultas sobre estado financiero, tareas pendientes o listar clientes. Si el usuario te pide crear una tarea, usa la herramienta createTask. Sé conciso y profesional. Responde en español.`;
 
     try {
-        const fullMessages = [
-            { role: "system", content: systemPrompt },
-            ...messages
-        ];
+        console.log('[AI] Starting chat completion with Gemini...');
+        // Map common message schema onto Gemini format
+        const geminiMessages = messages.map(msg => ({
+            role: msg.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: msg.content || " " }] // Ensure it's never completely empty
+        }));
 
-        console.log('[AI] Starting chat completion...');
-        const response = await openai.chat.completions.create({
-            model: "gpt-4o-mini", // Using mini for speed and cost, adjust if needed
-            messages: fullMessages,
-            tools: tools,
-            tool_choice: "auto"
+        let response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: geminiMessages,
+            config: {
+                systemInstruction: systemPrompt,
+                tools: tools,
+                temperature: 0.1,
+            }
         });
 
-        let responseMessage = response.choices[0].message;
+        const call = response.functionCalls?.[0]; // Single-turn or first tool call
+        let finalTextResponse = response.text;
 
         // Handle tool calls
-        if (responseMessage.tool_calls) {
-            const availableFunctions = {
-                getPendingTasks: executeTool,
-                createTask: executeTool,
-                getAccountingSummary: executeTool,
-                getClientsList: executeTool
-            };
+        if (call) {
+            const functionName = call.name;
+            const functionArgs = call.args || {};
 
-            fullMessages.push(responseMessage);
+            const functionResponse = await executeTool(functionName, functionArgs, req);
 
-            for (const toolCall of responseMessage.tool_calls) {
-                const functionName = toolCall.function.name;
-                let functionArgs = {};
-                try {
-                    functionArgs = JSON.parse(toolCall.function.arguments);
-                } catch (e) {
-                    console.log("[AI] Bad args:", toolCall.function.arguments);
+            // Return result to Gemini
+            const nextContents = [
+                ...geminiMessages,
+                {
+                    role: 'model',
+                    parts: [{ functionCall: { name: functionName, args: functionArgs } }]
+                },
+                {
+                    role: 'user',
+                    parts: [{ functionResponse: { name: functionName, response: functionResponse } }]
                 }
-                const functionResponse = await executeTool(functionName, functionArgs, req);
+            ];
 
-                fullMessages.push({
-                    tool_call_id: toolCall.id,
-                    role: "tool",
-                    name: functionName,
-                    content: functionResponse,
-                });
-            }
-
-            // Second LLM call with tool results
-            const secondResponse = await openai.chat.completions.create({
-                model: "gpt-4o-mini",
-                messages: fullMessages,
+            const secondResponse = await ai.models.generateContent({
+                model: "gemini-2.5-flash",
+                contents: nextContents,
+                config: { systemInstruction: systemPrompt }
             });
 
-            return res.json({ message: { role: 'assistant', content: secondResponse.choices[0].message.content || '...' } });
+            finalTextResponse = secondResponse.text;
         }
 
-        res.json({ message: { role: 'assistant', content: responseMessage.content || 'No response.' } });
+        res.json({ message: { role: 'assistant', content: finalTextResponse || '...' } });
 
     } catch (error) {
         console.error('[AI ERROR]', error);
@@ -238,3 +218,4 @@ Puedes acceder a la base de datos usando las herramientas proporcionadas. Usa fu
 });
 
 module.exports = router;
+
