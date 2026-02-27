@@ -274,6 +274,8 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/" element={<PublicStorefront />} />
+            <Route path="/store" element={<PublicStorefront />} />
 
             <Route path="/hub" element={
               <PrivateRoute>
