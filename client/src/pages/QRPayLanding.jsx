@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Smartphone, Zap, Shield, BarChart3, ChevronRight, Cpu, Layout, Wifi } from 'lucide-react';
-import './qRPay.css';
 
 const QRPayLanding = () => {
     const navigate = useNavigate();

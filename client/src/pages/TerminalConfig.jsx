@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Copy, Save, RotateCcw, Microscope, Loader2, Send } from 'lucide-react';
 import { publishSettings, subscribeToDevice, sendCommand } from '../services/mqttService';
 import { toast } from 'sonner';
-import './qRPay.css';
 
 const TerminalConfig = () => {
     const navigate = useNavigate();

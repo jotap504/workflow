@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QrCode, Search, Bell, Settings, Filter, Plus, ChevronRight, User, Loader2, Layout, BarChart3, Wifi, WifiOff } from 'lucide-react';
 import { getClient, subscribeToDevice } from '../services/mqttService';
-import './qRPay.css';
 
 const TerminalDashboard = () => {
     const navigate = useNavigate();
