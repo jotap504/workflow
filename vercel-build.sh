@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "--- Starting custom Vercel build ---"
+echo "--- Starting custom Vercel build with YARN ---"
 
 # Move to client directory
 cd client
@@ -8,15 +8,15 @@ cd client
 echo "Cleaning caches and node_modules..."
 rm -rf node_modules
 rm -f package-lock.json
-npm cache clean --force
+rm -f yarn.lock
 
-# Install dependencies including the problematic optional one unconditionally
-echo "Installing dependencies..."
-npm install --no-package-lock
-npm install @rollup/rollup-linux-x64-gnu --save-optional --no-package-lock
+# Install dependencies using Yarn (bypasses npm optional dependencies bug)
+echo "Installing dependencies with Yarn..."
+npm install -g yarn
+yarn install
 
 # Build
 echo "Building Vite project..."
-npm run build
+yarn build
 
 echo "--- Build complete ---"
