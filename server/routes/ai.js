@@ -1,281 +1,324 @@
 const express = require('express');
 const router = express.Router();
-const { GoogleGenAI } = require('@google/genai');
+const { OpenAI } = require('openai');
 const db = require('../db');
 const verifyToken = require('../middleware/auth');
 
-// Initialize Gemini conditionally
+// Initialize OpenRouter conditionally
 let ai = null;
-if (process.env.GEMINI_API_KEY) {
-    ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+if (process.env.OPENROUTER_API_KEY) {
+    ai = new OpenAI({
+        baseURL: "https://openrouter.ai/api/v1",
+        apiKey: process.env.OPENROUTER_API_KEY
+    });
 }
 
 router.use(verifyToken);
 
-// Tools definition for Gemini
-const tools = [{
-    functionDeclarations: [
-        {
-            name: "getPendingTasks",
-            description: "Retrieve all pending tasks from the database. Optionally specify a category or urgency.",
+const tools = [
+    {
+        type: "function",
+        function: {
+            name: "queryDatabase",
+            description: "Retrieve records from any table or collection in the database. Use this to list products, get user details, or find specific records based on conditions.",
             parameters: {
-                type: "OBJECT",
+                type: "object",
                 properties: {
-                    limit: { type: "INTEGER", description: "Limit number of tasks returned" }
+                    table: { type: "string", description: "The name of the table or collection (e.g., 'products', 'tasks', 'users', 'orders')." },
+                    conditions: {
+                        type: "array",
+                        description: "Optional array of conditions to filter results. Each condition is an object with 'field', 'operator' (e.g., '==', '>', '<', 'in'), and 'value'. Example: [{field: 'status', operator: '==', value: 'pending'}].",
+                        items: {
+                            type: "object",
+                            properties: {
+                                field: { type: "string" },
+                                operator: { type: "string" },
+                                value: { type: "string" }
+                            }
+                        }
+                    },
+                    limit: { type: "integer", description: "Limit the number of results (default 10) to avoid overloading context." }
                 },
-            }
-        },
-        {
-            name: "createTask",
-            description: "Create a new task in the system.",
-            parameters: {
-                type: "OBJECT",
-                properties: {
-                    title: { type: "STRING", description: "The title of the task" },
-                    description: { type: "STRING", description: "A detailed description of the task" },
-                    urgency: { type: "STRING", description: "The urgency of the task (low, medium, high)" },
-                    due_date: { type: "STRING", description: "The due date for the task in ISO 8601 format (e.g. 2026-02-28T00:00:00Z). Calculate the date based on the user's request, considering today as the current date timezone-independent." }
-                },
-                required: ["title", "urgency"]
-            }
-        },
-        {
-            name: "updateTask",
-            description: "Update the status or other details of an existing task.",
-            parameters: {
-                type: "OBJECT",
-                properties: {
-                    taskId: { type: "STRING", description: "The ID of the task to update" },
-                    status: { type: "STRING", description: "New status: pending, in-progress, or done." },
-                    due_date: { type: "STRING", description: "New due date in ISO 8601 format." }
-                },
-                required: ["taskId"]
-            }
-        },
-        {
-            name: "getTaskNotes",
-            description: "Retrieve notes/chats for a specific task.",
-            parameters: {
-                type: "OBJECT",
-                properties: {
-                    taskId: { type: "STRING", description: "The ID of the task to get notes for" }
-                },
-                required: ["taskId"]
-            }
-        },
-        {
-            name: "getAccountingSummary",
-            description: "Retrieve the current accounting balances (accounts and entities balances).",
-            parameters: {
-                type: "OBJECT",
-                properties: {},
-            }
-        },
-        {
-            name: "getClientsList",
-            description: "Retrieve a list of clients from the database.",
-            parameters: {
-                type: "OBJECT",
-                properties: {
-                    limit: { type: "INTEGER", description: "Optional limit for number of clients to fetch" }
-                },
+                required: ["table"]
             }
         }
-    ]
-}];
+    },
+    {
+        type: "function",
+        function: {
+            name: "createRecord",
+            description: "Create a new record in any table or collection.",
+            parameters: {
+                type: "object",
+                properties: {
+                    table: { type: "string", description: "The name of the table or collection (e.g., 'tasks', 'products')." },
+                    data: {
+                        type: "object",
+                        description: "A JSON object containing the fields and values for the new record. Example: {title: 'New task', urgency: 'high', status: 'pending'}."
+                    }
+                },
+                required: ["table", "data"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "updateRecord",
+            description: "Update an existing record in any table or collection.",
+            parameters: {
+                type: "object",
+                properties: {
+                    table: { type: "string", description: "The name of the table or collection." },
+                    id: { type: "string", description: "The ID (or string ID for Firebase) of the record to update." },
+                    data: {
+                        type: "object",
+                        description: "A JSON object containing the fields and values to update. Example: {price: 49500, stock: 5}."
+                    }
+                },
+                required: ["table", "id", "data"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "deleteRecord",
+            description: "Delete a record from any table or collection.",
+            parameters: {
+                type: "object",
+                properties: {
+                    table: { type: "string", description: "The name of the table or collection." },
+                    id: { type: "string", description: "The ID of the record to delete." }
+                },
+                required: ["table", "id"]
+            }
+        }
+    }
+];
+
+async function logAiAction(userId, action, tableName, recordId, details) {
+    if (db.isFirebase) {
+        try {
+            await db.collection('ai_action_logs').add({
+                user_id: userId,
+                action: action,
+                table_name: tableName,
+                record_id: String(recordId),
+                details: JSON.stringify(details),
+                created_at: new Date().toISOString()
+            });
+        } catch (e) {
+            console.error('[AI LOGGING ERROR]', e);
+        }
+    } else {
+        return new Promise((resolve) => {
+            db.run(
+                "INSERT INTO ai_action_logs (user_id, action, table_name, record_id, details) VALUES (?, ?, ?, ?, ?)",
+                [userId, action, tableName, String(recordId), JSON.stringify(details)],
+                (err) => {
+                    if (err) console.error('[AI LOGGING ERROR]', err.message);
+                    resolve();
+                }
+            );
+        });
+    }
+}
 
 // Tool Implementation Map
 async function executeTool(toolName, args, req) {
     console.log(`[AI TOOL] Executing ${toolName} with args:`, args);
+    const userId = req.userId || 'system';
+
     switch (toolName) {
-        case 'getPendingTasks':
-            if (db.isFirebase) {
-                let snap = await db.collection('tasks').where('status', '==', 'pending').get();
-                let tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                // Limit for context size
-                if (args.limit) tasks = tasks.slice(0, args.limit);
-                else tasks = tasks.slice(0, 10);
-                return { tasks: tasks.map(t => ({ title: t.title, urgency: t.urgency, id: t.id })) };
-            } else {
-                return new Promise((resolve) => {
-                    db.all("SELECT id, title, urgency, due_date FROM tasks WHERE status = 'pending' LIMIT ?", [args.limit || 10], (err, rows) => {
-                        if (err) resolve({ error: err.message });
-                        else resolve({ tasks: rows });
-                    });
-                });
-            }
-
-        case 'createTask':
-            if (db.isFirebase) {
-                const newTask = {
-                    title: args.title,
-                    description: args.description || "",
-                    urgency: args.urgency || "medium",
-                    status: "pending",
-                    created_by: req.userId,
-                    created_at: new Date().toISOString(),
-                    recurrence: "none"
-                };
-                if (args.due_date) newTask.due_date = args.due_date;
-                const docRef = await db.collection('tasks').add(newTask);
-                req.app.get('io').emit('tasks_updated');
-                return { success: true, taskId: docRef.id, message: "Task created successfully." };
-            } else {
-                return new Promise((resolve) => {
-                    db.run(
-                        "INSERT INTO tasks (title, description, urgency, status, created_by, recurrence, due_date) VALUES (?, ?, ?, 'pending', ?, 'none', ?)",
-                        [args.title, args.description || "", args.urgency || "medium", req.userId, args.due_date || null],
-                        function (err) {
-                            if (err) resolve({ error: err.message });
-                            else {
-                                req.app.get('io').emit('tasks_updated');
-                                resolve({ success: true, taskId: this.lastID, message: "Task created successfully." });
-                            }
-                        }
-                    );
-                });
-            }
-
-        case 'updateTask':
+        case 'queryDatabase':
             if (db.isFirebase) {
                 try {
-                    const taskRef = db.collection('tasks').doc(String(args.taskId));
-                    const updates = {};
-                    if (args.status) updates.status = args.status;
-                    if (args.due_date) updates.due_date = args.due_date;
-
-                    if (Object.keys(updates).length > 0) {
-                        await taskRef.update(updates);
-                        req.app.get('io').emit('tasks_updated');
+                    let query = db.collection(args.table);
+                    if (args.conditions && args.conditions.length > 0) {
+                        args.conditions.forEach(cond => {
+                            query = query.where(cond.field, cond.operator, cond.value);
+                        });
                     }
-                    return { success: true, message: "Task updated successfully." };
+                    const snap = await query.limit(args.limit || 10).get();
+                    const results = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    return { results };
                 } catch (e) { return { error: e.message }; }
             } else {
                 return new Promise((resolve) => {
-                    db.run("UPDATE tasks SET status = COALESCE(?, status), due_date = COALESCE(?, due_date) WHERE id = ?",
-                        [args.status || null, args.due_date || null, args.taskId], function (err) {
-                            if (err) resolve({ error: err.message });
-                            else {
-                                req.app.get('io').emit('tasks_updated');
-                                resolve({ success: true, message: "Task updated successfully." });
-                            }
+                    let sql = `SELECT * FROM ${args.table}`;
+                    let params = [];
+                    if (args.conditions && args.conditions.length > 0) {
+                        const whereClauses = args.conditions.map(c => {
+                            let op = c.operator === '==' ? '=' : c.operator;
+                            params.push(c.value);
+                            return `${c.field} ${op} ?`;
                         });
-                });
-            }
+                        sql += ` WHERE ` + whereClauses.join(' AND ');
+                    }
+                    sql += ` LIMIT ?`;
+                    params.push(args.limit || 10);
 
-        case 'getTaskNotes':
-            if (db.isFirebase) {
-                try {
-                    const snap = await db.collection('task_notes').where('task_id', '==', args.taskId).get();
-                    const notes = snap.docs.map(doc => doc.data().content);
-                    return { notes: notes.length > 0 ? notes : [] };
-                } catch (e) { return { error: e.message }; }
-            } else {
-                return new Promise((resolve) => {
-                    db.all("SELECT content, created_at FROM task_notes WHERE task_id = ?", [args.taskId], (err, rows) => {
+                    db.all(sql, params, (err, rows) => {
                         if (err) resolve({ error: err.message });
-                        else resolve({ notes: rows });
+                        else resolve({ results: rows });
                     });
                 });
             }
 
-        case 'getAccountingSummary':
+        case 'createRecord':
             if (db.isFirebase) {
                 try {
-                    const snap = await db.collection('accounting_entries').get();
-                    let balances = {};
-                    snap.docs.forEach(doc => {
-                        doc.data().items.forEach(item => {
-                            if (!balances[item.accountId]) balances[item.accountId] = { debit: 0, credit: 0 };
-                            balances[item.accountId].debit += parseFloat(item.debit) || 0;
-                            balances[item.accountId].credit += parseFloat(item.credit) || 0;
-                        });
+                    const docRef = await db.collection(args.table).add({
+                        ...args.data,
+                        created_at: new Date().toISOString(),
+                        created_by: userId
                     });
-                    return { balances };
+                    await logAiAction(userId, 'CREATE', args.table, docRef.id, args.data);
+
+                    if (args.table === 'tasks') req.app.get('io').emit('tasks_updated');
+                    return { success: true, id: docRef.id, message: "Record created successfully." };
                 } catch (e) { return { error: e.message }; }
             } else {
-                return { message: "Accounting not implemented in SQLite yet." };
+                return new Promise((resolve) => {
+                    const keys = Object.keys(args.data);
+                    const values = Object.values(args.data);
+                    const placeholders = keys.map(() => '?').join(', ');
+
+                    // Add standard columns
+                    keys.push('created_by');
+                    values.push(userId);
+                    const allPlaceholders = placeholders + ', ?';
+
+                    const sql = `INSERT INTO ${args.table} (${keys.join(', ')}) VALUES (${allPlaceholders})`;
+                    db.run(sql, values, async function (err) {
+                        if (err) resolve({ error: err.message });
+                        else {
+                            await logAiAction(userId, 'CREATE', args.table, this.lastID, args.data);
+                            if (args.table === 'tasks') req.app.get('io').emit('tasks_updated');
+                            resolve({ success: true, id: this.lastID, message: "Record created successfully." });
+                        }
+                    });
+                });
             }
 
-        case 'getClientsList':
+        case 'updateRecord':
             if (db.isFirebase) {
-                const snap = await db.collection('hub_clients').limit(args.limit || 10).get();
-                const clients = snap.docs.map(doc => ({ name: doc.data().name, email: doc.data().email }));
-                return { clients };
+                try {
+                    const docRef = db.collection(args.table).doc(String(args.id));
+                    await docRef.update({
+                        ...args.data,
+                        updated_at: new Date().toISOString()
+                    });
+                    await logAiAction(userId, 'UPDATE', args.table, args.id, args.data);
+
+                    if (args.table === 'tasks') req.app.get('io').emit('tasks_updated');
+                    return { success: true, message: "Record updated successfully." };
+                } catch (e) { return { error: e.message }; }
             } else {
                 return new Promise((resolve) => {
-                    db.all("SELECT name, email FROM hub_clients LIMIT ?", [args.limit || 10], (err, rows) => {
+                    const keys = Object.keys(args.data);
+                    const values = Object.values(args.data);
+                    const setClauses = keys.map(k => `${k} = ?`).join(', ');
+
+                    values.push(args.id); // for WHERE clause
+
+                    const sql = `UPDATE ${args.table} SET ${setClauses} WHERE id = ?`;
+                    db.run(sql, values, async function (err) {
                         if (err) resolve({ error: err.message });
-                        else resolve({ clients: rows });
+                        else {
+                            await logAiAction(userId, 'UPDATE', args.table, args.id, args.data);
+                            if (args.table === 'tasks') req.app.get('io').emit('tasks_updated');
+                            resolve({ success: true, message: "Record updated successfully." });
+                        }
+                    });
+                });
+            }
+
+        case 'deleteRecord':
+            if (db.isFirebase) {
+                try {
+                    await db.collection(args.table).doc(String(args.id)).delete();
+                    await logAiAction(userId, 'DELETE', args.table, args.id, null);
+
+                    if (args.table === 'tasks') req.app.get('io').emit('tasks_updated');
+                    return { success: true, message: "Record deleted successfully." };
+                } catch (e) { return { error: e.message }; }
+            } else {
+                return new Promise((resolve) => {
+                    const sql = `DELETE FROM ${args.table} WHERE id = ?`;
+                    db.run(sql, [args.id], async function (err) {
+                        if (err) resolve({ error: err.message });
+                        else {
+                            await logAiAction(userId, 'DELETE', args.table, args.id, null);
+                            if (args.table === 'tasks') req.app.get('io').emit('tasks_updated');
+                            resolve({ success: true, message: "Record deleted successfully." });
+                        }
                     });
                 });
             }
 
         default:
-            return { error: "Unknown tool" };
+            return { error: `Unknown tool: ${toolName}` };
     }
 }
 
 router.post('/chat', async (req, res) => {
     if (!ai) {
-        return res.status(500).json({ error: 'LLM no configurada. Por favor, asegúrate de que exista una clave GEMINI_API_KEY.' });
+        return res.status(500).json({ error: 'LLM no configurada. Por favor, asegúrate de que exista una clave OPENROUTER_API_KEY en el entorno.' });
     }
 
     const { messages, context } = req.body;
 
     const systemPrompt = `Eres un asistente de inteligencia artificial integrado en una aplicación de gestión empresarial llamada "Workflow". 
-Tu propósito es ayudar al usuario (${req.userRole}) a gestionar sus datos, cargar tareas y consultar información rápida.
+Tu propósito es ayudar al usuario (${req.userRole}) a gestionar sus datos y hacerle la vida más fácil.
 El usuario actualmente se encuentra en la sección: ${context || 'General'}.
-Puedes acceder a la base de datos usando las herramientas proporcionadas. Usa llamadas a funciones para responder consultas sobre estado financiero, tareas pendientes o listar clientes. Si el usuario te pide crear una tarea, usa la herramienta createTask (puedes inferir las fechas para el campo due_date en formato ISO 8601; Ej: Si hoy es 2026-02-27 y pide 'mañana', usa 2026-02-28). Para modificar tareas (ej: cambiar el estado a 'en-progreso'), usa updateTask. Para leer los chats de una tarea, usa getTaskNotes. Sé conciso y profesional. Responde en español y dale siempre la bienvenida al usuario con algo de empatía.`;
+Tienes CONTROL TOTAL sobre la base de datos gracias a tus herramientas (queryDatabase, createRecord, updateRecord, deleteRecord). Úsalas para buscar cualquier cosa que el usuario te pida (productos, tareas, clientes, etc.) o para hacer las modificaciones que te ordene.
+TONO Y PERSONALIDAD: Sé súper amigable, informal y conversacional. Háblale de tú al usuario, usa emojis de vez en cuando, y sé breve pero con muy buena onda. Nunca suenes como un robot corporativo aburrido. Si el usuario te pide un favor, respóndele como lo haría un colega cercano dispuesto a ayudar.`;
 
     try {
-        console.log('[AI] Starting chat completion with Gemini...');
-        // Map common message schema onto Gemini format
-        const geminiMessages = messages.map(msg => ({
-            role: msg.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: msg.content || " " }] // Ensure it's never completely empty
-        }));
+        console.log('[AI] Starting chat completion with OpenRouter...');
+        const apiMessages = [
+            { role: "system", content: systemPrompt },
+            ...messages.map(msg => ({
+                role: msg.role === 'assistant' ? 'assistant' : 'user',
+                content: msg.content || " "
+            }))
+        ];
 
-        let response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: geminiMessages,
-            config: {
-                systemInstruction: systemPrompt,
-                tools: tools,
-                temperature: 0.1,
-            }
+        let response = await ai.chat.completions.create({
+            model: process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash:free",
+            messages: apiMessages,
+            tools: tools,
+            temperature: 0.1,
         });
 
-        const call = response.functionCalls?.[0]; // Single-turn or first tool call
-        let finalTextResponse = response.text;
+        const responseMessage = response.choices[0].message;
+        const call = responseMessage.tool_calls?.[0];
+        let finalTextResponse = responseMessage.content;
 
         // Handle tool calls
         if (call) {
-            const functionName = call.name;
-            const functionArgs = call.args || {};
+            const functionName = call.function.name;
+            const functionArgs = JSON.parse(call.function.arguments || "{}");
 
             const functionResponse = await executeTool(functionName, functionArgs, req);
 
-            // Return result to Gemini
-            const nextContents = [
-                ...geminiMessages,
-                {
-                    role: 'model',
-                    parts: [{ functionCall: { name: functionName, args: functionArgs } }]
-                },
-                {
-                    role: 'user',
-                    parts: [{ functionResponse: { name: functionName, response: functionResponse } }]
-                }
-            ];
-
-            const secondResponse = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
-                contents: nextContents,
-                config: { systemInstruction: systemPrompt }
+            // Return result to OpenRouter
+            apiMessages.push(responseMessage);
+            apiMessages.push({
+                role: 'tool',
+                tool_call_id: call.id,
+                name: functionName,
+                content: JSON.stringify(functionResponse)
             });
 
-            finalTextResponse = secondResponse.text;
+            const secondResponse = await ai.chat.completions.create({
+                model: process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash:free",
+                messages: apiMessages,
+            });
+
+            finalTextResponse = secondResponse.choices[0].message.content;
         }
 
         res.json({ message: { role: 'assistant', content: finalTextResponse || '...' } });

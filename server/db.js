@@ -163,6 +163,18 @@ function initDB() {
       color TEXT DEFAULT '#6366f1'
     )`);
 
+        // AI Action Logs Table
+        db.run(`CREATE TABLE IF NOT EXISTS ai_action_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      action TEXT NOT NULL,
+      table_name TEXT NOT NULL,
+      record_id TEXT,
+      details TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(user_id) REFERENCES users(id)
+    )`);
+
         // Hub Clients Table (Local Mirror)
         db.run(`CREATE TABLE IF NOT EXISTS hub_clients (
       id TEXT PRIMARY KEY,
