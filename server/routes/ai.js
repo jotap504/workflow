@@ -287,7 +287,7 @@ TONO Y PERSONALIDAD: Sé súper amigable, informal y conversacional. Háblale de
         ];
 
         let response = await ai.chat.completions.create({
-            model: process.env.OPENROUTER_MODEL || "google/gemini-pro-1.5",
+            model: process.env.OPENROUTER_MODEL || "nousresearch/hermes-3-llama-3.1-405b:free",
             messages: apiMessages,
             tools: tools,
             temperature: 0.1,
@@ -314,7 +314,7 @@ TONO Y PERSONALIDAD: Sé súper amigable, informal y conversacional. Háblale de
             });
 
             const secondResponse = await ai.chat.completions.create({
-                model: process.env.OPENROUTER_MODEL || "google/gemini-pro-1.5",
+                model: process.env.OPENROUTER_MODEL || "nousresearch/hermes-3-llama-3.1-405b:free",
                 messages: apiMessages,
             });
 
